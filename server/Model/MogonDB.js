@@ -1,6 +1,13 @@
 
 const mongoose = require("mongoose");
-const dbURL = process.env.mongoDBURL;
+const os = require('os');
+let dbURL = null;
+
+if(os.cpus()[0].model === '12th Gen Intel(R) Core(TM) i7-12700F') {
+  dbURL = process.env.mongoDBRemote;
+} else {
+  dbURL = process.env.mongoDBLocal;
+}
 
 mongoose.set("strictQuery", false);
 mongoose

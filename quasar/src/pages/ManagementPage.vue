@@ -67,7 +67,6 @@
           expand-separator
           icon="perm_identity"
           label="用户信息"
-          
         >
           <q-card class="shadow-3">
             <q-card-section>
@@ -138,7 +137,6 @@
                 left-label
                 :disable="clickable"
                 @click="updateUser(user._id, 'userPrivilege.superUser', user.userPrivilege.superUser)"
-                
               />
               <q-toggle
                 v-model="user.userPrivilege.read"

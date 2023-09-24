@@ -290,10 +290,12 @@
       </q-card>
     </q-dialog>
 
-    <q-page-container style="overflow-y: auto">
-      <KeepAlive>
-        <router-view />
-      </KeepAlive>
+    <q-page-container>
+      <router-view v-slot="{ Component }"> 
+        <keep-alive>
+          <component :is="Component" />
+        </keep-alive>
+      </router-view>
     </q-page-container>
   </q-layout>
 </template>
@@ -332,6 +334,8 @@ const cancelSetting = () => {
   phone.value = store.user.phone;
   birth.value = store.user.birth;
 };
+
+
 
 const cancelChangePwd = () => {
   newPwd.value = "";

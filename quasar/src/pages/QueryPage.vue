@@ -1,8 +1,8 @@
 <template>
   <q-page class="column q-pa-sm bg-grey-3">
-    <div class="text-center row justify-center" >
-      <div class="text-center text-h5 q-pa-md">信息查询</div>
-      <q-icon name="info" size="md" color="orange-4"> 
+    <div class="text-center row justify-center q-pa-md" >
+      <div class="text-center text-h5">信息查询</div>
+      <q-icon name="info" size="sm" color="orange-10" @click="openHelpDialog = true"> 
         <q-tooltip>
           点击获得帮助
         </q-tooltip>
@@ -150,7 +150,7 @@
           />
           <q-fab-action 
             label="编辑"
-            :color="btnGroup? 'grey-7' : 'primary'" 
+            :color="btnGroup? 'grey' : 'primary'" 
             icon="edit"
             :disable="btnGroup"
             :hide-label="store.isMobile"
@@ -158,7 +158,7 @@
           />
           <q-fab-action 
             label="删除"
-            :color="btnGroup? 'grey-7' : 'red'" 
+            :color="btnGroup? 'grey' : 'red'" 
             icon="delete" 
             :disable="btnGroup"
             :hide-label="store.isMobile"
@@ -320,20 +320,25 @@
       v-model="openDeleteDialog"
       @delete="onDelete(store.searchData.type, store.originalData._id)"
     />
+    <HelpDialog 
+      v-model="openHelpDialog"
+    />
+
+
   </q-page>
 </template>
 
 <script setup>
 import { ref, reactive, watch, computed, onMounted} from "vue";
 import { useRouter } from "vue-router";
-import DeleteDialog from 'src/components/DeleteDialog.vue';
 import IPDialog from 'src/components/IPDialog.vue';
+import HelpDialog from 'src/components/HelpDialog.vue';
 import PhoneDialog from 'src/components/PhoneDialog.vue';
+import DeleteDialog from 'src/components/DeleteDialog.vue';
 import PrinterDialog from 'src/components/PrinterDialog.vue';
 import DataCenterDialog from 'src/components/DataCenterDialog.vue';
 import SurveillanceDialog from 'src/components/SurveillanceDialog.vue';
 import { exportFile } from 'quasar';
-
 import { useUserStore } from "../stores/store";
 
 const store = useUserStore();
@@ -341,6 +346,7 @@ const router = useRouter();
 
 
 onMounted(async () => {
+  store.searchData.type = "-请选择-";
   let token = localStorage.getItem("token");
 
   if (token !== null) {
@@ -364,8 +370,6 @@ onMounted(async () => {
 });
 
 const visible = ref(true);
-
-const typeError = ref(false);
 const showTable = ref(false);
 const scrollAreaHeight = ref(170);
 
@@ -375,7 +379,7 @@ const openPrinterDialog = ref(false);
 const openDataCenterDialog = ref(false);
 const openSurveillanceDialog = ref(false);
 const openDeleteDialog = ref(false);
-
+const openHelpDialog = ref(false);
 const placeRef = ref(null);
 const typeRef = ref(null);
 const fieldRef = ref(null);
