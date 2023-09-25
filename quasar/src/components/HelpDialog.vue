@@ -9,9 +9,9 @@
           </div>
         </q-card-section>
         <q-separator />
-        <q-scroll-area ref="scrollAreaRef" style="height: 600px; max-width: 100%;" @scroll="lisentingScroll">
+        <q-scroll-area ref="scrollAreaRef" :style="'height: '+ dialogHeight+'px; max-width: 100%;'" @scroll="lisentingScroll">
           <q-card-section class="q-pa-md">
-            <div class="text-subtitle2">
+            <div v-if="store.isMobile" class="text-subtitle2">
               <q-chip clickable @click="setPosition(0)">增加</q-chip>
               <q-chip clickable @click="setPosition(570)">编辑与删除</q-chip>
               <q-chip clickable @click="setPosition(1160)">导出</q-chip>
@@ -69,7 +69,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useUserStore } from "../stores/store";
 const store = useUserStore();
 const emit = defineEmits(['update:modelValue']);
@@ -98,4 +98,14 @@ const lisentingScroll = async (e) => {
     showToTop.value = false;
   }
 }
+
+const dialogHeight = computed(() => {
+  let height = store.$q.screen.height;
+  if (height < 600) {
+    return height = 600;
+  }
+  return height - 150
+})
+
+
 </script>

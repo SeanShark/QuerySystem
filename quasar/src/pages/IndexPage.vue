@@ -5,7 +5,7 @@
       style="max-width: 550px"
     >
       <q-tabs
-        v-model="mainTab"
+        v-model="store.mainTab"
         align="justify"
         narrow-indicator
         class="q-mb-md"
@@ -123,9 +123,11 @@ import { useRouter } from "vue-router";
 const store = useUserStore();
 const router = useRouter();
 
-const mainTab = ref("login");
+const mainTab = ref('login');
 const isPwd = ref(true);
 const isLoading = ref(false);
+
+
 
 onMounted(async () => {
   const token = localStorage.getItem("token");

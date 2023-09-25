@@ -281,10 +281,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, computed, watch } from "vue";
+import { ref, onMounted, reactive, watch } from "vue";
 import { useUserStore } from "../stores/store";
+import { useRouter } from "vue-router";
 
 const store = useUserStore();
+const router = useRouter();
 
 const inputLight = ref(false);
 const selectedDate = ref(store.todayDate);
@@ -521,6 +523,7 @@ onMounted(async () => {
           router.push("/index");
         });
     } catch (err) {
+      console.log(err);
       router.push("/index");
     }
   } else {

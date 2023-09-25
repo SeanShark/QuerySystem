@@ -7,6 +7,7 @@ import { useQuasar, date, exportFile } from "quasar";
 export const useUserStore = defineStore("datastore", {
   state: () => ({
     authUser: null,
+    mainTab: 'index',
     $q: useQuasar(),
     axios: axios,
     todayDate: date.formatDate(new Date(), 'YYYY/MM/DD'),

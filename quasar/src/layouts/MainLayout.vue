@@ -50,7 +50,7 @@
 
     <q-header v-else>
       <q-toolbar>
-        <q-btn flat round dense icon="home" class="q-mr-sm" to="/index" />
+        <q-btn flat round dense icon="home" class="q-mr-sm" to="/index" @click="toIndexPage"/>
 
         <q-toolbar-title class="text-center">{{ route.name }}</q-toolbar-title>
       </q-toolbar>
@@ -335,7 +335,9 @@ const cancelSetting = () => {
   birth.value = store.user.birth;
 };
 
-
+const toIndexPage = () => {
+  store.mainTab = 'index';
+}
 
 const cancelChangePwd = () => {
   newPwd.value = "";
