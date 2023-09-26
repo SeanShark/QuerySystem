@@ -1,6 +1,6 @@
 <template>
   <q-page class="q-pa-md">
-    <h5 class="q-mt-none q-mb-md text-center">管理页</h5>
+    <h5 class="q-mt-none q-mb-md text-center lt-md">管理页</h5>
     <q-input
       v-model="filter"
       dense

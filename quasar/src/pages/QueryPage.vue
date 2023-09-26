@@ -1,5 +1,5 @@
 <template>
-  <q-page class="column q-pa-sm bg-grey-3">
+  <q-page class="column q-pa-sm">
     <div class="text-center row justify-center q-pa-md" >
       <div class="text-center text-h5">信息查询</div>
       <q-icon name="info" size="sm" color="orange-10" @click="openHelpDialog = true"> 

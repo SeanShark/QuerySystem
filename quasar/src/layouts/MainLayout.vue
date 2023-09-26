@@ -1,302 +1,302 @@
 <template>
   <q-layout view="hHh Lpr lFf">
-    <q-header v-if="store.user">
-      <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
+    
+      <q-header v-if="store.user">
+        <q-toolbar>
+          <q-btn
+            flat
+            dense
+            round
+            icon="menu"
+            aria-label="Menu"
+            @click="toggleLeftDrawer"
+          />
+          <q-toolbar-title>
+            <div class="gt-sm text-center"> {{ route.name }}</div>
+            <q-icon
+              class="q-pa-md lt-md icon-position"
+              name="fas fa-dove"
+              size="sm"
+              color="white"
+            />
+          </q-toolbar-title>
+          <q-btn round flat icon="person" @click="toggleRightDrawer">
+
+          </q-btn>
+        </q-toolbar>
+      </q-header>
+      <q-header v-else>
+        <q-toolbar>
+          <q-btn flat round dense icon="home" class="q-mr-sm" to="/index" @click="toIndexPage"/>
+          <q-toolbar-title class="text-center ">{{ route.name }}</q-toolbar-title>
+        </q-toolbar>
+      </q-header>
+      <q-drawer
+        v-if="store.user"
+        v-model="leftDrawerOpen"
+        :width="store.isMobile ? 250 : 320"
+        show-if-above
+        bordered
+        side="left"
+        class="shadow-3"
+        :mini="leftMiniState"
+        mini-to-overlay
+        @mouseover="leftMiniState = false"
+        @mouseout="leftMiniState = true"
+        
+      >
+        <q-icon
+          v-if="store.isMobile"
+          class="q-pa-md"
+          show-if-above
+          name="fa-sharp fa-solid fa-dove"
+          size="md"
+          color="primary"
         />
+        <q-list>
+          <q-item v-ripple to="/" clickable exact>
+            <q-item-section avatar>
+              <q-icon name="home" :size="store.isMobile? 'sm' : 'md'" color="primary" />
+            </q-item-section>
+            <q-item-section class="text-weight-bold">首页</q-item-section>
+          </q-item>
 
-        <q-toolbar-title>
-          <span class="gt-sm"> {{ route.name }}</span>
-          <q-icon
-            class="q-pa-md lt-md icon-position"
-            name="fas fa-dove"
-            size="sm"
-            color="white"
-          />
-        </q-toolbar-title>
+          <q-item
+            v-if="store.user.userPrivilege.read"
+            v-ripple
+            clickable
+            to="/query"
+            exact
+          >
+            <q-item-section avatar>
+              <q-icon name="search" :size="store.isMobile? 'sm' : 'md'" color="primary" />
+            </q-item-section>
+            <q-item-section class="text-weight-bold">查询</q-item-section>
+          </q-item>
 
-        <q-btn round flat icon="person">
-          <q-menu auto-close>
-            <q-list>
-              <q-item clickable @click="confirmLogout">
-                <q-item-section avatar>
-                  <q-icon name="logout" />
-                </q-item-section>
-                <q-item-section> 退出账号 </q-item-section>
-              </q-item>
-              <q-item clickable @click="changePwd = true">
-                <q-item-section avatar>
-                  <q-icon name="lock" />
-                </q-item-section>
-                <q-item-section> 更改密码 </q-item-section>
-              </q-item>
-              <q-item clickable @click="settings = true">
-                <q-item-section avatar>
-                  <q-icon name="settings" />
-                </q-item-section>
-                <q-item-section> 个人设定 </q-item-section>
-              </q-item>
-            </q-list>
-          </q-menu>
-        </q-btn>
-      </q-toolbar>
-    </q-header>
+          <q-item v-ripple clickable to="/logger" exact>
+            <q-item-section avatar>
+              <q-icon name="edit_note" :size="store.isMobile? 'sm' : 'md'" color="primary" />
+            </q-item-section>
+            <q-item-section class="text-weight-bold">日志</q-item-section>
+          </q-item>
+          <q-item
+            v-if="store.user.userPrivilege.superUser"
+            v-ripple
+            clickable
+            to="/management"
+            exact
+          >
+            <q-item-section avatar>
+              <q-icon name="manage_accounts" :size="store.isMobile? 'sm' : 'md'" color="primary" />
+            </q-item-section>
+            <q-item-section class="text-weight-bold">管理页</q-item-section>
+          </q-item>
+        </q-list>
+      </q-drawer>
 
-    <q-header v-else>
-      <q-toolbar>
-        <q-btn flat round dense icon="home" class="q-mr-sm" to="/index" @click="toIndexPage"/>
+      <q-drawer 
+        v-model="rightDrawerOpen" 
+        show-if-above side="right" 
+        bordered
+        :mini="rigthMiniState"
+        mini-to-overlay
+        @mouseover="rigthMiniState = false"
+        @mouseout="rigthMiniState = true"
+      >
+        <q-list>
+          <q-item clickable @click="confirmLogout">
+            <q-item-section avatar>
+              <q-icon name="logout" />
+            </q-item-section>
+            <q-item-section> 退出账号 </q-item-section>
+          </q-item>
+          <q-item clickable @click="changePwd = true">
+            <q-item-section avatar>
+              <q-icon name="lock" />
+            </q-item-section>
+            <q-item-section> 更改密码 </q-item-section>
+          </q-item>
+          <q-item clickable @click="settings = true">
+            <q-item-section avatar>
+              <q-icon name="settings" />
+            </q-item-section>
+            <q-item-section> 个人设定 </q-item-section>
+          </q-item>
+        </q-list>
+      </q-drawer>
 
-        <q-toolbar-title class="text-center">{{ route.name }}</q-toolbar-title>
-      </q-toolbar>
-    </q-header>
-
-    <q-drawer
-      v-if="store.user"
-      v-model="leftDrawerOpen"
-      :width="store.isMobile ? 250 : 320"
-      show-if-above
-      bordered
-      class="shadow-3"
-    >
-      <q-icon
-        class="q-pa-md"
-        name="fa-sharp fa-solid fa-dove"
-        size="md"
-        color="primary"
-      />
-      <q-list>
-        <q-item v-ripple to="/" clickable exact>
-          <q-item-section avatar>
-            <q-icon name="home" size="sm" color="primary" />
-          </q-item-section>
-
-          <q-item-section class="text-weight-bold">首页</q-item-section>
-        </q-item>
-
-        <q-item
-          v-if="store.user.userPrivilege.read"
-          v-ripple
-          clickable
-          to="/query"
-          exact
-        >
-          <q-item-section avatar>
-            <q-icon name="fa-solid fa-search" size="xs" color="primary" />
-          </q-item-section>
-
-          <q-item-section class="text-weight-bold">查询</q-item-section>
-        </q-item>
-        <q-item v-ripple clickable to="/logger" exact>
-          <q-item-section avatar>
-            <q-icon name="edit_note" size="xs" color="primary" />
-          </q-item-section>
-
-          <q-item-section class="text-weight-bold">日志</q-item-section>
-        </q-item>
-
-        <q-item
-          v-if="store.user.userPrivilege.superUser"
-          v-ripple
-          clickable
-          to="/management"
-          exact
-        >
-          <q-item-section avatar>
-            <q-icon name="manage_accounts" size="xs" color="primary" />
-          </q-item-section>
-
-          <q-item-section class="text-weight-bold">管理页</q-item-section>
-        </q-item>
-      </q-list>
-    </q-drawer>
-
-    <q-dialog v-model="changePwd" persistent >
-      <q-card style="min-width: 300px">
-        <q-card-section>
-          <div class="text-h6 text-center">密码更改</div>
-        </q-card-section>
-        <q-separator />
-
-        <q-card-section class="q-pa-sm">
-          <div class="div q-gutter-sm">
-            <q-input
-              ref="originPwdRef"
-              v-model="originPwd"
-              type="password"
-              filled
-              autofocus
-              dense
-              bottom-slots
-              hide-bottom-space
-              autocomplete="off"
-              :error="originPwdError"
-            >
-              <template #prepend>
-                <div class="text-subtitle2">原密码：</div>
-              </template>
-              <template #error>
-                {{ originPwdErrorMsg }}
-              </template>
-            </q-input>
-
-            <q-input
-              ref="newPwdRef"
-              v-model="newPwd"
-              type="password"
-              filled
-              dense
-              bottom-slots
-              hide-bottom-space
-              lazy-rules="ondemand"
-              autocomplete="off"
-              :rules="[(val) => val.length >= 8 || '密码长度应该至少为8位数']"
-            >
-              <template #prepend>
-                <div class="text-subtitle2">新密码 ：</div>
-              </template>
-            </q-input>
-
-            <q-input
-              ref="repeatPwdRef"
-              v-model="repeatPwd"
-              type="password"
-              filled
-              dense
-              bottom-slots
-              hide-bottom-space
-              lazy-rules="ondemand"
-              autocomplete="off"
-              :rules="[(val) => val == newPwd || '与输入的密码不一致']"
-            >
-              <template #prepend>
-                <div class="text-subtitle2">重复密码：</div>
-              </template>
-            </q-input>
-          </div>
-        </q-card-section>
-
-        <q-card-actions align="right" class="text-primary">
-          <q-btn v-close-popup flat label="取消" @click="cancelChangePwd" />
-          <q-btn 
-            flat 
-            label="确定"
-            :loading="changeLoading"
-            @click="submitChangePwd" 
-          />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
-    <q-dialog v-model="settings" persistent :class="store.isMobile? 'width: 100%': 'width: 320px'">
-      <q-card style="min-width: 260px">
-        <q-card-section>
-          <div class="text-h6 text-center">个人资料更改</div>
-        </q-card-section>
-        <q-separator />
-
-        <q-card-section class="q-pa-sm">
-          <div class="div q-gutter-sm">
-            <q-input
-              ref="nameRef"
-              v-model="name"
-              outlined
-              autofocus
-              dense
-              bottom-slots
-              hide-bottom-space
-              lazy-rules="ondemand"
-              :rules="[(val) => !!val || '名字不能为空']"
-            >
-              <template #prepend>
-                <div class="text-subtitle2">姓名：</div>
-              </template>
-              <template #before>
-                <q-icon name="person" />
-              </template>
-            </q-input>
-
-            <q-select
-              ref="genderRef"
-              v-model="gender"
-              outlined
-              dense
-              bottom-slots
-              hide-bottom-space
-              emit-value
-              lazy-rules="ondemand"
-              :options="genderOptions"
-              :rules="[(val) => !!val || '性别不能为空']"
-            >
-              <template #prepend>
-                <div class="text-subtitle2">性别：</div>
-              </template>
-              <template #before>
-                <q-icon name="transgender" />
-              </template>
-              <template #option="scope">
-                <q-item v-bind="scope.itemProps">
-                  <q-item-section avatar>
-                    <q-icon
-                      :name="scope.opt.icon"
-                      :color="scope.opt.value === '男' ? 'primary' : 'red'"
-                    />
-                  </q-item-section>
-                  <q-item-section>
-                    <q-item-label>{{ scope.opt.label }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-              </template>
-            </q-select>
-
-            <q-input
-              ref="phoneRef"
-              v-model.number="phone"
-              outlined
-              dense
-              bottom-slots
-              hide-bottom-space
-              lazy-rules="ondemand"
-              :rules="[(val) => !!val || '电话不能为空']"
-            >
-              <template #before>
-                <q-icon name="phone_iphone" />
-              </template>
-              <template #prepend>
-                <div class="text-subtitle2">电话：</div>
-              </template>
-            </q-input>
-
-            <q-input v-model="birth" outlined dense>
-              <template #before>
-                <q-icon name="cake" />
-              </template>
-              <template #prepend>
-                <div class="text-subtitle2">出生年月：</div>
-              </template>
-            </q-input>
-          </div>
-        </q-card-section>
-
-        <q-card-actions align="right" class="text-primary">
-          <q-btn v-close-popup flat label="取消" @click="cancelSetting" />
-          <q-btn flat label="确定" :loading="changeLoading" @click="submitSettings" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
-    <q-page-container>
-      <router-view v-slot="{ Component }"> 
-        <keep-alive>
-          <component :is="Component" />
-        </keep-alive>
-      </router-view>
-    </q-page-container>
+      <q-dialog v-model="changePwd" persistent>
+        <q-card class="q-pa-md" :style="store.isMobile? 'display:block; width: 100%;' : 'display:block; width: 450px;'">
+          <q-card-section>
+            <div class="text-h6 text-center">密码更改</div>
+          </q-card-section>
+          <q-separator />
+          <q-card-section class="q-pa-md">
+            <div class="div q-gutter-md">
+              <q-input
+                ref="originPwdRef"
+                v-model="originPwd"
+                type="password"
+                filled
+                autofocus
+                dense
+                bottom-slots
+                hide-bottom-space
+                autocomplete="off"
+                :error="originPwdError"
+              >
+                <template #prepend>
+                  <div class="text-subtitle2">原密码：</div>
+                </template>
+                <template #error>
+                  {{ originPwdErrorMsg }}
+                </template>
+              </q-input>
+              <q-input
+                ref="newPwdRef"
+                v-model="newPwd"
+                type="password"
+                filled
+                dense
+                bottom-slots
+                hide-bottom-space
+                lazy-rules="ondemand"
+                autocomplete="off"
+                :rules="[(val) => val.length >= 8 || '密码长度应该至少为8位数']"
+              >
+                <template #prepend>
+                  <div class="text-subtitle2">新密码 ：</div>
+                </template>
+              </q-input>
+              <q-input
+                ref="repeatPwdRef"
+                v-model="repeatPwd"
+                type="password"
+                filled
+                dense
+                bottom-slots
+                hide-bottom-space
+                lazy-rules="ondemand"
+                autocomplete="off"
+                :rules="[(val) => val == newPwd || '与输入的密码不一致']"
+              >
+                <template #prepend>
+                  <div class="text-subtitle2">重复密码：</div>
+                </template>
+              </q-input>
+            </div>
+          </q-card-section>
+          <q-card-actions align="right" class="text-primary">
+            <q-btn v-close-popup flat label="取消" @click="cancelChangePwd" />
+            <q-btn
+              flat
+              label="确定"
+              :loading="changeLoading"
+              @click="submitChangePwd"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+      <q-dialog v-model="settings" persistent>
+        <q-card class="q-pa-md" :style="store.isMobile? 'display:block; width: 100%;' : 'display:block; width: 450px;'">
+          <q-card-section>
+            <div class="text-h6 text-center">个人资料更改</div>
+          </q-card-section>
+          <q-separator class="q-mb-md "/>
+          <q-card-section class="q-pa-sm">
+            <div class="q-gutter-md">
+              <q-input
+                ref="nameRef"
+                v-model="name"
+                outlined
+                autofocus
+                dense
+                bottom-slots
+                hide-bottom-space
+                lazy-rules="ondemand"
+                :rules="[(val) => !!val || '名字不能为空']"
+              >
+                <template #prepend>
+                  <div class="text-subtitle2">姓名：</div>
+                </template>
+                <template #before>
+                  <q-icon name="person" />
+                </template>
+              </q-input>
+              <q-select
+                ref="genderRef"
+                v-model="gender"
+                outlined
+                dense
+                bottom-slots
+                hide-bottom-space
+                emit-value
+                lazy-rules="ondemand"
+                :options="genderOptions"
+                :rules="[(val) => !!val || '性别不能为空']"
+              >
+                <template #prepend>
+                  <div class="text-subtitle2">性别：</div>
+                </template>
+                <template #before>
+                  <q-icon name="transgender" />
+                </template>
+                <template #option="scope">
+                  <q-item v-bind="scope.itemProps">
+                    <q-item-section avatar>
+                      <q-icon
+                        :name="scope.opt.icon"
+                        :color="scope.opt.value === '男' ? 'primary' : 'red'"
+                      />
+                    </q-item-section>
+                    <q-item-section>
+                      <q-item-label>{{ scope.opt.label }}</q-item-label>
+                    </q-item-section>
+                  </q-item>
+                </template>
+              </q-select>
+              <q-input
+                ref="phoneRef"
+                v-model.number="phone"
+                outlined
+                dense
+                bottom-slots
+                hide-bottom-space
+                lazy-rules="ondemand"
+                :rules="[(val) => !!val || '电话不能为空']"
+              >
+                <template #before>
+                  <q-icon name="phone_iphone" />
+                </template>
+                <template #prepend>
+                  <div class="text-subtitle2">电话：</div>
+                </template>
+              </q-input>
+              <q-input v-model="birth" outlined dense>
+                <template #before>
+                  <q-icon name="cake" />
+                </template>
+                <template #prepend>
+                  <div class="text-subtitle2">出生年月：</div>
+                </template>
+              </q-input>
+            </div>
+          </q-card-section>
+          <q-card-actions align="right" class="text-primary">
+            <q-btn v-close-popup flat label="取消" @click="cancelSetting" />
+            <q-btn flat label="确定" :loading="changeLoading" @click="submitSettings" />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+      <q-page-container class="layout-container">
+        <router-view v-slot="{ Component }">
+          <keep-alive>
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
+      </q-page-container>
+    
   </q-layout>
 </template>
 
@@ -327,6 +327,8 @@ const repeatPwdRef = ref(null);
 const changeLoading = ref(false);
 const originPwdError = ref(false);
 const originPwdErrorMsg = ref("");
+const leftMiniState = ref(true);
+const rigthMiniState = ref(true);
 
 const cancelSetting = () => {
   name.value = store.user.name;
@@ -337,8 +339,8 @@ const cancelSetting = () => {
 
 /*
 If <keepalive>, route to 'register' and back to /index again, 
-the mainTab.value will keeps the 'register'
-So need to set the value to 'login', and uses the store data.
+the mainTab.value will keeps at 'register' tab
+So need to set the value to 'login' menully,via the store data.
 */
 const toIndexPage = () => {
   store.mainTab = 'login';
@@ -489,6 +491,10 @@ const leftDrawerOpen = ref(false);
 const toggleLeftDrawer = () => {
   leftDrawerOpen.value = !leftDrawerOpen.value;
 };
+const rightDrawerOpen = ref(false);
+const toggleRightDrawer = () => {
+  rightDrawerOpen.value = !rightDrawerOpen.value;
+};
 </script>
 
 <style lang="sass" scoped>
@@ -497,4 +503,10 @@ const toggleLeftDrawer = () => {
   bottom: 0
   left: 50%
   transform: translateX(-50%)
+
+.layout-container 
+  height: 100vh
+  max-width: 1200px
+  margin: auto
+  
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <q-page class="bg-grey-3">
+  <q-page>
     <p class="text-h6 text-center q-pa-md">任务To-Do</p>
     <div class="column q-pa-xs q-ma-none">
       <q-input
