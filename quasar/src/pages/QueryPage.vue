@@ -122,7 +122,7 @@
 
     <div class="q-pa-xs">
       <q-page-sticky
-        v-if="showSticky"
+        v-if="showSticky1 && showSticky2"
         position="bottom-right"
         :offset="fabPosition"
         class="z-top"
@@ -467,9 +467,11 @@ watch(
   }
 );
 
-const showSticky = computed(() => {
+
+const showSticky1 = computed(() => {
     return store.searchData.type !== "-请选择-" && store.searchData.place !== "-请选择-"
 })
+const showSticky2 = ref(true);
 
 const clearFormState = () => {
   if (store.searchData.type === "终端") {
@@ -518,6 +520,7 @@ const clearFormState = () => {
 }
 
 const onCancelEdit = () => {
+  showSticky2.value = true;
   clearFormState();
   store.originalData = JSON.parse(JSON.stringify(store.selected[0]));
   if (store.originalData.号码) {
@@ -526,6 +529,7 @@ const onCancelEdit = () => {
 };
 
 const onCancelAdd = () => {
+  showSticky2.value = true;
   clearFormState();
   store.addBtnLoading = false;
 };
@@ -652,6 +656,7 @@ const sortIPv4 = (a, b) => {
 
 const openAddDialog = () => {
   store.isAdd = true;
+  showSticky2.value = false;
   if (store.searchData.type === "终端") {
     for (const prop in store.IPData) {
       if (store.IPData.hasOwnProperty(prop)) {
@@ -706,6 +711,7 @@ const openAddDialog = () => {
 }
 const openEditDialog = () => {
   store.isAdd = false;
+  showSticky2.value = false;
   if (store.searchData.type === "终端") {
     for (const prop in store.originalData) {
       if (store.originalData.hasOwnProperty(prop)) {
@@ -806,6 +812,7 @@ const onAddIP = async () => {
       columns.value = ipColumns;
       showTable.value = true; 
       openIPDialog.value = false;
+      showSticky2.value = true;
       store.IPData.MAC = store.IPData.MAC.toUpperCase();
       store.IPData._id = res.data._id;
       store.IPData.updatedAt = res.data.updatedAt;
@@ -912,6 +919,7 @@ const onAddPrinter = async () => {
       columns.value = printerColumns;
       showTable.value = true;
       openPrinterDialog.value = false;
+      showSticky2.value = true;
       store.printerData._id = res.data._id;
       store.printerData.数量 = store.printerData.数量? parseInt(store.printerData.数量) : 0;
       store.printerData.updatedAt = res.data.updatedAt;
@@ -991,6 +999,7 @@ const onAddPhone = async () => {
       columns.value = phoneColumns;
       showTable.value = true;
       openPhoneDialog.value = false;
+      showSticky2.value = true;
       store.phoneData._id = res.data._id;
       store.phoneData.updatedAt = res.data.updatedAt;
       tableRows.value.unshift(JSON.parse(JSON.stringify(store.phoneData)));
@@ -1067,6 +1076,7 @@ const onAddDataCenter = async () => {
       columns.value = datacenterColumns;
       showTable.value = true; 
       openDataCenterDialog.value = false;
+      showSticky2.value = true;
       store.datacenterData._id = res.data._id;
       store.datacenterData.updatedAt = res.data.updatedAt;
       tableRows.value.unshift(JSON.parse(JSON.stringify(store.datacenterData)));
@@ -1145,6 +1155,7 @@ const onAddSurveillance = async () => {
       columns.value = surveillanceColumns;
       showTable.value = true; 
       openSurveillanceDialog.value = false;
+      showSticky2.value = true;
       store.surveillanceData._id = res.data._id;
       store.surveillanceData.updatedAt = res.data.updatedAt;
       tableRows.value.unshift(JSON.parse(JSON.stringify(store.surveillanceData)));
@@ -1205,6 +1216,7 @@ const onEditIP = async (id) => {
         console.log("Element with _id", id, "not found.");
       }
       openIPDialog.value = false;
+      showSticky2.value = true;
       store.successTip(res.data.msg);
     })
     .catch((err) => {
@@ -1254,6 +1266,7 @@ const onEditPrinter = async (id) => {
         console.log("Element with _id", id, "not found.");
       }
       openPrinterDialog.value = false;
+      showSticky2.value = true;
       store.successTip(res.data.msg);
     })
     .catch((err) => {
@@ -1302,6 +1315,7 @@ const onEditPhone = async (id) => {
         console.log("Element with _id", id, "not found.");
       }
       openPhoneDialog.value = false;
+      showSticky2.value = true;
       store.successTip(res.data.msg);
     })
     .catch((err) => {
@@ -1357,6 +1371,7 @@ const onEditDataCenter = async (id) => {
       }
       store.editBtnLoading = false;
       openDataCenterDialog.value = false;
+      showSticky2.value = true;
       store.successTip(res.data.msg);
     })
     .catch((err) => {
@@ -1406,6 +1421,7 @@ const onEditSurveillance = async (id) => {
       }
       store.editBtnLoading = false;
       openSurveillanceDialog.value = false;
+      showSticky2.value = true;
       store.successTip(res.data.msg);
     })
     .catch((err) => {

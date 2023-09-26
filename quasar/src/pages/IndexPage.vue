@@ -10,7 +10,11 @@
         narrow-indicator
         class="q-mb-md"
       >
-        <q-tab class="text-primary" name="login" label=" 登 录 " />
+        <q-tab 
+          class="text-primary" 
+          name="login" 
+          label=" 登 录 "
+        />
         <q-route-tab
           class="text-orange"
           name="register"
@@ -21,7 +25,7 @@
 
       <div class="q-gutter-y-sm">
         <q-tab-panels
-          v-model="mainTab"
+          v-model="store.mainTab"
           animated
           transition-prev="fade"
           transition-next="fade"
@@ -123,7 +127,6 @@ import { useRouter } from "vue-router";
 const store = useUserStore();
 const router = useRouter();
 
-const mainTab = ref('login');
 const isPwd = ref(true);
 const isLoading = ref(false);
 

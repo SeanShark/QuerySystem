@@ -237,6 +237,9 @@ const goToNextStep = async () => {
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
       if (emailPattern.test(userInfo.email)) {
+        //if do not set next btn to disable will trigger a bug -
+        //- that double(or more) click on the btn will jump to step 3 directly.
+        isDone.value = true;
         errorDate.hasError = false;
         isLoading.value = true;
         await store.axios
@@ -255,7 +258,10 @@ const goToNextStep = async () => {
                 : "未知错误, 请重试.";
             errorDate.hasError = true;
             isLoading.value = false;
-          });
+          })
+          .finally(() => {
+            isDone.value = false;
+          })
       } else {
         errorDate.hasError = true;
         errorDate.errorMsg = "非法邮箱地址";
@@ -275,6 +281,7 @@ const goToNextStep = async () => {
     // stepperRef.value.next();
   } else if (step.value === 2) {
     if (userInfo.code.length === 6) {
+      isDone.value = true;
       errorDate.hasError = false;
       isLoading.value = true;
       await store.axios
@@ -293,7 +300,10 @@ const goToNextStep = async () => {
           isLoading.value = false;
           errorDate.hasError = true;
           errorDate.errorMsg = err.response.data.msg;
-        });
+        })
+        .finally(() => {
+          isDone.value = false;
+        })
     } else {
       isLoading.value = false;
       errorDate.hasError = true;
@@ -320,6 +330,7 @@ const goToNextStep = async () => {
               router.push("/index");
             }, 3000);
             store.successTip(res.data.msg);
+            store.successTip('3秒之后自动转入登录页');
           }
         })
         .catch((err) => {

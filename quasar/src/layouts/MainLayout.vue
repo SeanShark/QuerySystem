@@ -335,8 +335,13 @@ const cancelSetting = () => {
   birth.value = store.user.birth;
 };
 
+/*
+If <keepalive>, route to 'register' and back to /index again, 
+the mainTab.value will keeps the 'register'
+So need to set the value to 'login', and uses the store data.
+*/
 const toIndexPage = () => {
-  store.mainTab = 'index';
+  store.mainTab = 'login';
 }
 
 const cancelChangePwd = () => {

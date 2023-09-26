@@ -2,12 +2,12 @@ import { defineStore } from "pinia";
 import axios from "axios";
 import { store } from "quasar/wrappers";
 import { reactive } from "vue";
-import { useQuasar, date, exportFile } from "quasar";
+import { useQuasar, date } from "quasar";
 
 export const useUserStore = defineStore("datastore", {
   state: () => ({
     authUser: null,
-    mainTab: 'index',
+    mainTab: 'login',
     $q: useQuasar(),
     axios: axios,
     todayDate: date.formatDate(new Date(), 'YYYY/MM/DD'),

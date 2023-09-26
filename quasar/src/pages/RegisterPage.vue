@@ -27,7 +27,7 @@
             class="q-py-md"
             bottom-slots
             hide-bottom-space
-            :error="errorDate.hasError"
+            :error="errorData.hasError"
             :loading="isLoading"
             @keyup.enter="goToNextStep"
 
@@ -36,7 +36,7 @@
               <q-icon color="teal" name="mail" />
             </template>
             <template #error>
-              {{ errorDate.errorMsg }}
+              {{ errorData.errorMsg }}
             </template>
           </q-input>
 
@@ -87,14 +87,14 @@
             class="q-py-md"
             bottom-slots
             hide-bottom-space
-            :error="errorDate.hasError"
+            :error="errorData.hasError"
             :loading="isLoading"
           >
             <template #before>
               <q-icon color="red" name="key" />
             </template>
             <template #error>
-              {{ errorDate.errorMsg }}
+              {{ errorData.errorMsg }}
             </template>
           </q-input>
         </div>
@@ -207,7 +207,7 @@ const codeRef = ref(null);
 const passwordRef = ref(null);
 const repeatpwdRef = ref(null);
 const stepperRef = ref(null);
-const errorDate = reactive({
+const errorData = reactive({
   hasError: false,
   errorMsg: "",
 });
@@ -224,11 +224,11 @@ const repeatpwdRule = [
 
 const goToNextStep = async () => {
   if (step.value === 1) {
-    errorDate.hasError = false;
+    errorData.hasError = false;
     captcha.hasError = false;
     if (!userInfo.email) {
-      errorDate.errorMsg = "请输入邮箱地址";
-      errorDate.hasError = true;
+      errorData.errorMsg = "请输入邮箱地址";
+      errorData.hasError = true;
       return;
     }
 
@@ -236,7 +236,10 @@ const goToNextStep = async () => {
       const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
       if (emailPattern.test(userInfo.email)) {
-        errorDate.hasError = false;
+        //if do not set next btn to disable will trigger a bug -
+        //- that double(or more) click on the btn will jump to step 3 directly.
+        isDone.value = true;
+        errorData.hasError = false;
         isLoading.value = true;
         await store.axios
           .post("/user/signup", {
@@ -248,16 +251,19 @@ const goToNextStep = async () => {
             return stepperRef.value.next();
           })
           .catch((err) => {
-            errorDate.errorMsg =
+            errorData.errorMsg =
             err.response.data && err.response.data.msg
             ? err.response.data.msg
             : "未知错误, 请重试.";
-            errorDate.hasError = true;
+            errorData.hasError = true;
             isLoading.value = false;
-          });
+          })
+          .finally(() => {
+            isDone.value = false;
+          })
       } else {
-        errorDate.errorMsg = "非法邮箱地址";
-        errorDate.hasError = true;
+        errorData.errorMsg = "非法邮箱地址";
+        errorData.hasError = true;
       }
     } else {
       if (captcha.Data.length === 0) {
@@ -273,7 +279,8 @@ const goToNextStep = async () => {
     }
   } else if (step.value === 2) {
     if (userInfo.code.length === 6) {
-      errorDate.hasError = false;
+      isDone.value = true;
+      errorData.hasError = false;
       isLoading.value = true;
       await store.axios
         .post("/user/verifysignup", {
@@ -289,16 +296,21 @@ const goToNextStep = async () => {
         })
         .catch((err) => {
           isLoading.value = false;
-          errorDate.errorMsg = err.response.data.msg;
-          errorDate.hasError = true;
-        });
+          store.failureTip(err.response.data.msg);
+          // errorData.errorMsg = err.response.data.msg;
+          // errorData.hasError = true;
+        })
+        .finally(() => {
+          isDone.value = false;
+        })
     } else {
       isLoading.value = false;
-      errorDate.hasError = true;
-      errorDate.errorMsg = "验证码为6位数字";
+      errorData.hasError = true;
+      errorData.errorMsg = "验证码为6位数字";
+      return;
     }
   } else {
-    errorDate.hasError = false;
+    errorData.hasError = false;
     if (
       (await passwordRef.value?.validate()) &&
       (await repeatpwdRef.value?.validate())
@@ -314,16 +326,18 @@ const goToNextStep = async () => {
           if (res.data.status === "success") {
             isLoading.value = false;
             isDone.value = true;
+            store.mainTab = 'login';
             setTimeout(() => {
               router.push("/index");
             }, 3000);
             store.successTip(res.data.msg);
+            store.successTip('3秒后自动转入登录页');
           }
         })
         .catch((err) => {
           isLoading.value = false;
-          errorDate.hasError = true;
-          errorDate.errorMsg = err.response.data.msg;
+          // errorData.hasError = true;
+          store.failureTip(err.response.data.msg);
         });
     }
   }

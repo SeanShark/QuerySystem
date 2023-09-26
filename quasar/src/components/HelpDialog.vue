@@ -1,9 +1,9 @@
 <template>
-  <q-dialog :model-value="modelValue" persistent :maximized="store.isMobile">
-      <q-card class="q-pb-lg" >
+  <q-dialog :model-value="props.modelValue" persistent :maximized="store.isMobile" >
+      <q-card class="q-pb-lg" :style="store.isMobile? 'width: 100%;': 'width: 550px;'">
         <q-card-section>
           <div class="row justify-bejtween">
-            <div class="text-h6 text-center">使用技巧：</div>
+            <div class="text-h6 text-center">使用技巧~：</div>
             <q-space/>
             <q-btn icon="close" flat round dense @click="exitHelp"/>
           </div>
@@ -47,7 +47,7 @@
             <q-img spinner-color="white" src="/pics/filter.png" />
           </q-card-section>
 
-          <q-page-sticky position="bottom" :offset="[18, 18]" >
+          <q-page-sticky class="totop-position" :offset="[18, 18]" >
             <q-btn 
               v-if="showToTop"
               flat 
@@ -109,3 +109,11 @@ const dialogHeight = computed(() => {
 
 
 </script>
+
+<style lang="sass" scoped>
+.totop-position
+  position: sticky
+  top: 0
+  left: 50%
+  transform: translateX(-50%)
+</style>
