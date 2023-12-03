@@ -6,10 +6,11 @@ const {
   DataCenter,
   Surveillance,
 } = require("../../Model/MogonDB");
-const DataBase = require("../../Model/MogonDB");
+const Database = require("../../Model/MogonDB");
 const router = express.Router();
 const validate = require("../../components/ValidateEmail.js");
 const { query, validationResult, check, body } = require('express-validator');
+
 
 router.get("/", [
   body("*.user").isEmail().withMessage("用户信息错误"),
@@ -32,6 +33,7 @@ router.get("/", [
 
   const { user, type, place, field } = req.query.queryData;
 
+
   if (!await validate.validateUser(user)) {
     return res.status(401).json({
       status: "error",
@@ -46,7 +48,7 @@ router.get("/", [
     });
   }
 
-  const keyword = req.query.queryData.keyword.toUpperCase();
+  let keyword = req.query.queryData.keyword;
 
   const forbiddenKeyword = ["1.2", "2.1", "1.1", "0.0"];
 
@@ -73,7 +75,7 @@ router.get("/", [
         msg: "您没有权限查看该数据",
       });
     };
-    DB = DataBase.DataCenter;
+    DB = Database.DataCenter;
   } else if (type === "终端") {
     if (!await validate.allowIP(user)){
       return res.status(401).json({
@@ -81,7 +83,8 @@ router.get("/", [
         msg: "您没有权限查看该数据",
       });
     };
-    DB = DataBase.IP;
+    DB = Database.IP;
+    keyword = keyword.toUpperCase();
   } else if (type === "耗材") {
     if (!await validate.allowPrinter(user)){
       return res.status(401).json({
@@ -89,7 +92,7 @@ router.get("/", [
         msg: "您没有权限查看该数据",
       });
     };
-    DB = DataBase.Printer;
+    DB = Database.Printer;
   } else if (type === "电话") {
     if (!await validate.allowPhone(user)){
       return res.status(401).json({
@@ -97,7 +100,7 @@ router.get("/", [
         msg: "您没有权限查看该数据",
       });
     };
-    DB = DataBase.Phone;
+    DB = Database.Phone;
   } else if (type === "监控") {
     if (!await validate.allowsurveillance(user)){
       return res.status(401).json({
@@ -105,7 +108,7 @@ router.get("/", [
         msg: "您没有权限查看该数据",
       });
     };
-    DB = DataBase.Surveillance;
+    DB = Database.Surveillance;
   } else {
     res.status(401).json({
       status: "error",
@@ -113,38 +116,52 @@ router.get("/", [
     });
     return;
   }
+  // res.status(201).send(results);
+  try {
+    let results = new Object();
 
-  if (keyword === "全部" || keyword === "所有" || keyword === "ALL") {
-    await DB.find({ Place: place })
-      .sort({ updatedAt: "descending" })
-      .then((results) => {
-        res.status(201).send(results);
-      })
-      .catch((err) => console.log(err));
-  } else if (keyword === "NULL" || keyword === "空的") {
-    await DB.find({
-      $and: [
-        { Place: place },
-        { [field]: null },
-      ],
-    })
-      .sort({ updatedAt: "descending" })
-      .then((results) => {
-        res.status(201).send(results);
-      })
-      .catch((err) => console.log(err));
-  } else {
-    await DB.find({
-      $and: [
-        { Place: place },
-        { [field]: { $regex: new RegExp(keyword, "i") } },
-      ],
-    })
-      .sort({ updatedAt: "descending" })
-      .then((results) => {
-        res.status(201).send(results);
-      })
-      .catch((err) => console.log(err));
+    const letter = keyword.charAt(0);
+    const unicode = keyword.charCodeAt(0);
+    if (letter === '!' || unicode === 65281) {
+      keyword = keyword.replace(letter, "");
+      results = await DB.find({
+        $and: [{ Place: place }, { [field]: { $not: new RegExp(keyword, "i") }}]
+      }).sort({ updatedAt: "descending" });
+    }
+    else if (keyword === "全部" || keyword === "所有" || keyword === "ALL") {
+      results = await DB.find({ Place: place })
+        .sort({ updatedAt: "descending" });
+    } else if (keyword === "NULL" || keyword === "空的") {
+      results = await DB.find({
+        $and: [
+          { Place: place },
+          { [field]: null },
+        ],
+      }).sort({ updatedAt: "descending" });
+    } else if ( field === '数量' ) {
+      results = await DB.find({
+        $and: [
+          { Place: place },
+          { [field]: parseInt(keyword) },
+        ],
+      }).sort({ updatedAt: "descending" });
+    } else {
+      results = await DB.find({
+        $and: [
+          { Place: place },
+          { [field]: { $regex: new RegExp(keyword, "i") } },
+        ],
+      }).sort({ updatedAt: "descending" });
+    }
+
+    res.status(201).send(results);
+
+  }
+  catch (err) {
+    res.status(401).json({
+      status: "error",
+      msg: err.message,
+    });
   }
 });
 
@@ -169,12 +186,12 @@ router.get("/logger", query("user").isEmail().withMessage("用户信息错误"),
     let result = [];
     const monthOption = parseInt(req.query.month);
     if (req.query.month === 0) {
-      result = await DataBase.Logger.find({ user: user });
+      result = await Database.Logger.find({ user: user });
     } else if (monthOption === 1 || monthOption === 3 || monthOption === 6) {
       const MonthAgo = new Date();
       MonthAgo.setMonth(MonthAgo.getMonth() - monthOption);
 
-      result = await DataBase.Logger.find({
+      result = await Database.Logger.find({
         $and: [{ user: user }, { createdAt: { $gte: MonthAgo } }],
       });
     } else {
@@ -200,16 +217,16 @@ router.post("/addlogger", async (req, res) => {
   }
   const createdAt = new Date().toLocaleString("zh-cn");
 
-  const loggerExist = await DataBase.Logger.exists({
+  const loggerExist = await Database.Logger.exists({
     $and: [{ user: user }, { date: date }],
   });
 
   if (loggerExist) {
-    const existingLogger = await DataBase.Logger.findOne({ _id: loggerExist });
+    const existingLogger = await Database.Logger.findOne({ _id: loggerExist });
     const updatedLogger =
       existingLogger.logger + "<ul><li>" + logger + "</li></ul>";
 
-    await DataBase.Logger.updateOne(
+    await Database.Logger.updateOne(
       { _id: loggerExist },
       { $set: { logger: updatedLogger } }
     )
@@ -222,7 +239,7 @@ router.post("/addlogger", async (req, res) => {
     // console.log(result.modifiedCount, "document(s) updated");
   } else {
     try {
-      const newLogger = new DataBase.Logger({
+      const newLogger = new Database.Logger({
         user: user,
         date: date,
         logger: "<ul><li>" + logger + "</li></ul>",
@@ -265,7 +282,7 @@ router.post("/editlogger", async (req, res) => {
   }
 
   try {
-    await DataBase.Logger.findOneAndUpdate({ _id: _id }, { logger: logger })
+    await Database.Logger.findOneAndUpdate({ _id: _id }, { logger: logger })
       .then((e) => {
         if (e) {
           res.status(201).json({
@@ -319,10 +336,10 @@ router.post("/addip", async (req, res) => {
 
   const MAC = req.body.data.MAC.toUpperCase();
   const ip = req.body.data.IP;
-  let existsIP = await IP.exists({
+  let existsIP = await Database.IP.exists({
     $and: [{ Place: place }, { IP: ip }],
   });
-  let existsMAC = await IP.exists({
+  let existsMAC = await Database.IP.exists({
     $and: [{ Place: place }, { MAC: MAC }],
   });
 
@@ -393,7 +410,7 @@ router.post("/adddatacenter", async (req, res) => {
   }
   
   let ip = req.body.data.IP;
-  let existsIP = await DataCenter.exists({
+  let existsIP = await Database.DataCenter.exists({
     $and: [{ Place: place }, { IP: ip }],
   });
 
@@ -404,7 +421,7 @@ router.post("/adddatacenter", async (req, res) => {
     });
   } else {
     const date = new Date().toLocaleString("zh-cn");
-    const newRecord = new DataCenter({
+    const newRecord = new Database.DataCenter({
       Place: place,
       IP: ip,
       名称: req.body.data.名称,
@@ -459,7 +476,7 @@ router.post("/addsurveillance", async (req, res) => {
   }
 
   let ip = req.body.data.IP;
-  let existsIP = await Surveillance.exists({
+  let existsIP = await Database.Surveillance.exists({
     $and: [{ Place: place }, { IP: ip }],
   });
 
@@ -550,15 +567,15 @@ router.post("/addphone", async (req, res) => {
     });
     return;
   }
-  let existsNumber = await Phone.exists({
+  let existsNumber = await Database.Phone.exists({
     $and: [{ Place: place }, { 号码: number }],
   });
 
-  let existsPanel = await Phone.exists({
+  let existsPanel = await Database.Phone.exists({
     $and: [{ Place: place }, { 面板号: panel }],
   });
 
-  let existsColor = await Phone.exists({
+  let existsColor = await Database.Phone.exists({
     $and: [{ Place: place }, { 楼层线路: cable }, { 颜色对: color }],
   });
 
@@ -582,7 +599,7 @@ router.post("/addphone", async (req, res) => {
     return;
   } else {
     const date = new Date().toLocaleString("zh-cn");
-    const newRecord = new Phone({
+    const newRecord = new Database.Phone({
       Place: place,
       号码: number,
       面板号: panel,
@@ -657,7 +674,7 @@ router.post("/addprinter", async (req, res) => {
 
   const date = new Date().toLocaleString("zh-cn");
 
-  let existsColor = await Printer.exists({
+  let existsColor = await Database.Printer.exists({
     $and: [
       { Place: place },
       { 品牌: brand },
@@ -672,7 +689,7 @@ router.post("/addprinter", async (req, res) => {
       msg: "颜色已存在",
     });
   }
-  const newRecord = new Printer({
+  const newRecord = new Database.Printer({
     Place: place,
     品牌: brand,
     打印机: printer,
@@ -720,15 +737,15 @@ router.delete("/delete", async (req, res) => {
   let DB = new Object();
 
   if (type === "机房") {
-    DB = DataBase.DataCenter;
+    DB = Database.DataCenter;
   } else if (type === "终端") {
-    DB = DataBase.IP;
+    DB = Database.IP;
   } else if (type === "耗材") {
-    DB = DataBase.Printer;
+    DB = Database.Printer;
   } else if (type === "电话") {
-    DB = DataBase.Phone;
+    DB = Database.Phone;
   } else if (type === "监控") {
-    DB = DataBase.Surveillance;
+    DB = Database.Surveillance;
   } else {
     res.status(401).json({
       status: "error",
@@ -766,7 +783,7 @@ router.delete("/deletelogger", async (req, res) => {
 
   const id = req.query.id;
   try {
-    await DataBase.Logger.deleteOne({ _id: id })
+    await Database.Logger.deleteOne({ _id: id })
       .then(() => {
         res.status(201).json({
           status: "success",
@@ -811,10 +828,10 @@ router.put("/editip", async (req, res) => {
   const mac = req.body.data.MAC.toUpperCase();
   const id = req.body.data._id;
 
-  let existsIP = await IP.exists({
+  let existsIP = await Database.IP.exists({
     $and: [{ IP: ip }, { Place: place }, { _id: { $ne: id } }],
   });
-  let existsMAC = await IP.exists({
+  let existsMAC = await Database.IP.exists({
     $and: [{ MAC: mac }, { Place: place }, { _id: { $ne: id } }],
   });
   if (existsIP) {
@@ -839,7 +856,7 @@ router.put("/editip", async (req, res) => {
       备注: req.body.data.备注,
       updatedAt: date,
     };
-    IP.findOneAndUpdate({ _id: id }, updateUser)
+    Database.IP.findOneAndUpdate({ _id: id }, updateUser)
       .then((e) => {
         if (e) {
           res.status(201).json({
@@ -915,15 +932,15 @@ router.put("/editphone", async (req, res) => {
     });
     return;
   }
-  let existsPhone = await Phone.exists({
+  let existsPhone = await Database.Phone.exists({
     $and: [{ Place: place }, { 号码: number }, { _id: { $ne: id } }],
   });
-  let existsPanel = await Phone.exists({
+  let existsPanel = await Database.Phone.exists({
     $and: [{ Place: place }, { 面板号: req.body.面板号 }, { _id: { $ne: id } }],
   });
 
   if (req.body.楼层线路) {
-    let existsColor = await Phone.exists({
+    let existsColor = await Database.Phone.exists({
       $and: [
         { Place: place },
         { 楼层线路: cable },
@@ -962,7 +979,7 @@ router.put("/editphone", async (req, res) => {
       办公室: req.body.data.办公室,
       updatedAt: date,
     };
-    Phone.findOneAndUpdate({ _id: req.body.data._id }, updatePhone)
+    Database.Phone.findOneAndUpdate({ _id: req.body.data._id }, updatePhone)
       .then((e) => {
         if (e) {
           res.status(201).json({
@@ -1032,7 +1049,7 @@ router.put("/editprinter", async (req, res) => {
   }
 
   const date = new Date().toLocaleString("zh-cn");
-  let existsColor = await Printer.exists({
+  let existsColor = await Database.Printer.exists({
     $and: [
       { Place: place },
       { 硒鼓: cartridge },
@@ -1057,7 +1074,7 @@ router.put("/editprinter", async (req, res) => {
     办公室: office,
     updatedAt: date,
   };
-  Printer.findOneAndUpdate({ _id: req.body.data._id }, updatePrinter)
+  Database.Printer.findOneAndUpdate({ _id: req.body.data._id }, updatePrinter)
     .then((e) => {
       if (e) {
         res.status(201).json({
@@ -1105,7 +1122,7 @@ router.put("/editdatacenter", async (req, res) => {
   }
   
   let ip = req.body.data.IP;
-  let existsIP = await DataCenter.exists({
+  let existsIP = await Database.DataCenter.exists({
     $and: [
       { Place: place },
       { IP: ip },
@@ -1128,7 +1145,7 @@ router.put("/editdatacenter", async (req, res) => {
     备注: req.body.data.备注,
     updatedAt: date,
   };
-  DataCenter.findOneAndUpdate({ _id: req.body.data._id }, updateDataCenter)
+  Database.DataCenter.findOneAndUpdate({ _id: req.body.data._id }, updateDataCenter)
     .then((e) => {
       if (e) {
         res.status(201).json({
@@ -1177,7 +1194,7 @@ router.put("/editsurveillance", async (req, res) => {
   };
 
   let ip = req.body.data.IP;
-  let existsIP = await Surveillance.exists({
+  let existsIP = await Database.Surveillance.exists({
     $and: [
       { Place: req.body.data.Place },
       { IP: ip },
@@ -1199,7 +1216,7 @@ router.put("/editsurveillance", async (req, res) => {
       备注: req.body.data.备注,
       updatedAt: date,
     };
-    Surveillance.findOneAndUpdate({ _id: req.body.data._id }, updateDataCenter)
+    Database.Surveillance.findOneAndUpdate({ _id: req.body.data._id }, updateDataCenter)
       .then((e) => {
         if (e) {
           res.status(201).json({

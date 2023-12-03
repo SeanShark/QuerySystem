@@ -1,5 +1,6 @@
 const express = require("express");
 const { Todo } = require("../../Model/MogonDB");
+const Database = require("../../Model/MogonDB");
 
 const router = express.Router();
 
@@ -13,13 +14,14 @@ router.post("/gettodolists", async (req, res) => {
   }
 
   try {
-    res.status(201).send(await Todo.find({ owner: owner }).sort({createdAt: 'descending'}));
-    //res.status(201).send(await Todo.find({ owner: owner }).where('isDone').equals('false').sort({createdAt: 'descending'}));
+    res.status(201).send(await Database.Todo.find({ owner: owner }).sort({createdAt: 'descending'}));
+    //res.status(201).send(await Database.Todo.find({ owner: owner }).where('isDone').equals('false').sort({createdAt: 'descending'}));
   } catch (error) {
     // Handle errors
+    console.log(error);
     return res.status(500).json({
       status: "error",
-      msg: "内部错误，请重试."
+      msg: "内部错误，请重试.10023"
     });
   }
 });
@@ -47,7 +49,7 @@ router.post("/addtodo", async (req, res) => {
     });
 
     // Save new post to database
-    await newTodo.save().then(() => {
+    await newDatabase.Todo.save().then(() => {
       return res.status(201).json({
         status: "success",
         msg: "成功增加记录."
@@ -65,7 +67,7 @@ router.post("/addtodo", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
-    await Todo.deleteOne({ _id: req.params.id }).then(() => {
+    await Database.Todo.deleteOne({ _id: req.params.id }).then(() => {
       res.status(201).json({
         status: "success",
         msg: "记录成功删除."
@@ -88,7 +90,7 @@ router.put("/", async (req, res) => {
   const update = { [field]: value }
 
   try {
-    Todo.findOneAndUpdate(filter, update, { new: true })
+    Database.Todo.findOneAndUpdate(filter, update, { new: true })
     .then(() =>{
       res.status(201).json({
         status: "success",

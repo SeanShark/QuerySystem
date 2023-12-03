@@ -560,11 +560,13 @@ const handleSearch = async () => {
     keywordState.errorMsg = "搜索关键字不能为空";
     return;
   }
-  if (keyword.length === 1 && store.searchData.field !== '姓名') {
+  if (keyword.length === 1 && store.searchData.field !== '姓名' && store.searchData.field !== '数量') {
     keywordState.isEmpty = true;
     keywordState.errorMsg = "关键字太少";
     return;
   }
+  // console.log(store.searchData.field, store.searchData.keyword);
+  // return
   searchLoading.value = true;
 
   if (store.searchData.type === "终端") {
@@ -1031,7 +1033,6 @@ const onAddPhone = async () => {
       store.addBtnLoading = false;
       scrollAreaHeight.value = await tableRef.value?.$el.clientHeight + 10;
     });
-  
 };
 
 const datacenterFormValidate = () => {

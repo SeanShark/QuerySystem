@@ -1,6 +1,6 @@
-
 const mongoose = require("mongoose");
 const os = require('os');
+
 let dbURL = null;
 
 if(os.cpus()[0].model === '12th Gen Intel(R) Core(TM) i7-12700F') {
@@ -342,6 +342,7 @@ const DataCenter = mongoose.models.datacenter || mongoose.model("DataCenter", Da
 const Surveillance = mongoose.models.surveillance || mongoose.model("Surveillance", SurveillanceSchema);
 const Logger = mongoose.models.logger || mongoose.model("Logger", LoggerSchema);
 
+
 module.exports = {
   User,
   IP,
@@ -352,3 +353,4 @@ module.exports = {
   Surveillance,
   Logger,
 };
+

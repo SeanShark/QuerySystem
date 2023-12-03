@@ -1,5 +1,6 @@
 const express = require("express");
 const { User } = require("../../Model/MogonDB");
+const Database = require("../../Model/MogonDB");
 const Joi = require("joi");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -9,6 +10,7 @@ const transporter = require("../../Mail/email");
 const svgCaptcha = require('svg-captcha');
 const validate = require("../../components/ValidateEmail.js");
 const { query, validationResult, check, body } = require('express-validator');
+
 
 router.get("/test", [
   body("user").notEmpty().withMessage("用户名不能为空"),
@@ -66,7 +68,7 @@ router.post("/register", async (req, res, next) => {
     return;
   }
 
-  await User.findOne({ email: req.body.email }).then(async (user) => {
+  await Database.User.findOne({ email: req.body.email }).then(async (user) => {
     if (user) {
       res.status(400).json({
         status: "error",
@@ -116,7 +118,7 @@ router.post("/signup", async (req, res, next) => {
   const activationCode = Math.floor(100000 + Math.random() * 900000);
 
   try {
-    const user = await User.findOne({ email: email });
+    const user = await Database.User.findOne({ email: email });
     if(!user) {
       const newUser = new User({
         email: email,
@@ -167,7 +169,7 @@ router.post("/signup", async (req, res, next) => {
 router.post("/verifysignup", async (req, res) => {
   const { email, code } = req.body;
   try {
-    const user = await User.findOne({
+    const user = await Database.User.findOne({
       $and: [{ email: email }, { activationCode: code }],
     })
     if (user) {
@@ -193,7 +195,7 @@ router.post("/verifysignup", async (req, res) => {
 router.post("/setpassword", async (req, res) => {
   const { email, code, password } = req.body;
   try {
-    const user = await User.findOne({
+    const user = await Database.User.findOne({
       $and: [{ email: email }, { activationCode: code }],
     })
     if (!user) {
@@ -225,7 +227,7 @@ router.post("/setpassword", async (req, res) => {
 */
 router.post("/login", async (req, res, next) => {
   try {
-    const user = await User.findOne({ email: req.body.email });
+    const user = await Database.User.findOne({ email: req.body.email });
     if (!user) {
       return res.status(401).json({
         status: "nameError",
@@ -275,7 +277,7 @@ router.get("/verifyuser", async (req, res, next) => {
         msg: "未授权用户",
       });
       try {
-        const user = await User.findOne({ _id: decoded.userID })
+        const user = await Database.User.findOne({ _id: decoded.userID })
         if(!user) {
           return res.status(401).json({
             title: "error",
@@ -326,7 +328,7 @@ router.post("/changepwd", [
     
     try {
       
-      const user = await User.findOne({ email: req.body.user });
+      const user = await Database.User.findOne({ email: req.body.user });
       if (!user) {
         return res.status(401).json({
           status: "error",
@@ -375,7 +377,7 @@ router.post("/changepwd", [
 router.post("/forgot", async (req, res, next) => {
   const userEmail = req.body.email;
   try {
-    const user = await User.findOne({ email: userEmail });
+    const user = await Database.User.findOne({ email: userEmail });
     if (!user) {
       return res.status(401).json({
         status: "error",
@@ -423,7 +425,7 @@ router.post("/forgot", async (req, res, next) => {
 router.post("/verifyforgotcode", async (req, res) => {
   const { code, email } = req.body;
   try {
-    const user = await User.findOne({
+    const user = await Database.User.findOne({
       $and: [{ email: email }, { forgotCode: code }],
     });
     if (user) {
@@ -450,7 +452,7 @@ router.post("/verifyforgotcode", async (req, res) => {
 router.post("/resetpassword", async (req, res) => {
   const { email, code, password } = req.body;
   try {
-    const user = await User.findOne({
+    const user = await Database.User.findOne({
       $and: [{ email: email }, { forgotCode: code }],
     });
     if (!user) {
@@ -496,7 +498,7 @@ router.post("/loggersetting", async (req, res) => {
     });
   }
   try {
-    const userEmail = await User.findOne({ email: user });
+    const userEmail = await Database.User.findOne({ email: user });
     userEmail.loggerSetting.monthRange = monthRange;
     userEmail.loggerSetting.themeColor = themeColor;
     userEmail.loggerSetting.eventColor = eventColor;
@@ -534,7 +536,7 @@ router.post("/alluser",async (req, res) => {
     });
   }
 
-  const isSuperUser = await User.exists({
+  const isSuperUser = await Database.User.exists({
     $and: [{ 'email': user }, { 'userPrivilege.superUser': 'true' }],
   });
 
@@ -546,7 +548,7 @@ router.post("/alluser",async (req, res) => {
   }
 
   try {
-    const users = await User.find({});
+    const users = await Database.User.find({});
     res.status(201).send(users);
   }
   catch(err) {
@@ -569,7 +571,7 @@ router.post("/setuser",async (req, res) => {
     });
   }
 
-  const isSuperUser = await User.exists({
+  const isSuperUser = await Database.User.exists({
     $and: [{ 'email': user }, { 'userPrivilege.superUser': 'true' }],
   });
 
@@ -588,7 +590,7 @@ router.post("/setuser",async (req, res) => {
   }
 
   try {
-    const updateUser = await User.findOneAndUpdate({ _id: id }, { [field]: value });
+    const updateUser = await Database.User.findOneAndUpdate({ _id: id }, { [field]: value });
     if (updateUser) {
       res.status(201).json({
         status: "success",
@@ -610,7 +612,7 @@ router.post("/setuser",async (req, res) => {
   Personal Information Settings
 */
 router.post("/personal", async (req, res) => {
-  const user = await User.findOne({ email: req.body.user });
+  const user = await Database.User.findOne({ email: req.body.user });
   if (!user) {
     return res.status(401).json({
       status: "error",
@@ -643,7 +645,7 @@ router.delete("/deleteuser", async (req, res) => {
 
   const id = req.query.id;
   try {
-    const targetId = await User.deleteOne({ _id: id })
+    const targetId = await Database.User.deleteOne({ _id: id })
     if (targetId) {
       res.status(201).json({
         status: "success",
