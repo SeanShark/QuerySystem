@@ -1,5 +1,4 @@
 const express = require("express");
-const { User } = require("../../Model/MogonDB");
 const Database = require("../../Model/MogonDB");
 const Joi = require("joi");
 const bcrypt = require("bcrypt");
@@ -77,7 +76,7 @@ router.post("/register", async (req, res, next) => {
       return;
     }
 
-    const newUser = new User({
+    const newUser = new Database.User({
       name: req.body.email.match(/(.*)@(.*)/)[1],
       email: req.body.email,
       password: bcrypt.hashSync(req.body.password, 10),
@@ -120,7 +119,7 @@ router.post("/signup", async (req, res, next) => {
   try {
     const user = await Database.User.findOne({ email: email });
     if(!user) {
-      const newUser = new User({
+      const newUser = new Database.User({
         email: email,
         activationCode: activationCode,
       });
@@ -582,7 +581,7 @@ router.post("/setuser",async (req, res) => {
     });
   }
 
-  if ( id === '65007b62e5a12afd583d0304' && field === 'userPrivilege.superUser') {
+  if ( user === '47262243@qq.com' && field === 'userPrivilege.superUser') {
     return res.status(401).json({
       status: "error",
       msg: "根管理员的管理权限不能更改",

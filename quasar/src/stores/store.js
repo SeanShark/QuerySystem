@@ -212,12 +212,13 @@ export const useUserStore = defineStore("datastore", {
         })
       })
     },
-    editTodo (field, id, value) {
+    editTodo (field, id, value, createdAt) {
       return new Promise(async (resolve, reject) => {
         await axios.put("/todo/", {
           id: id,
           field: field,
           value: value,
+          createdAt: createdAt,
         })
         .then((res) => {
           this.systemMsg = res.data.msg;

@@ -278,6 +278,14 @@
                 :disable="clickable"
                 @click="updateUser(user._id, 'placeAccess.慧明', user.placeAccess.慧明)"
               />
+              <q-toggle
+                v-model="user.placeAccess.创点"
+                color="green"
+                label="创点"
+                left-label
+                :disable="clickable"
+                @click="updateUser(user._id, 'placeAccess.创点', user.placeAccess.创点)"
+              />
             </q-card-section>
           </q-card>
         </q-expansion-item>

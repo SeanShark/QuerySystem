@@ -62,6 +62,9 @@
               <template #error>
                 {{ searchItems.errorMsg }}
               </template>
+              <template #append>
+                <q-btn round dense flat icon="add" @click.stop.prevent="addPlace" />
+              </template>
             </q-select>
            
           </div>
@@ -323,8 +326,6 @@
     <HelpDialog 
       v-model="openHelpDialog"
     />
-
-
   </q-page>
 </template>
 
@@ -398,7 +399,7 @@ const draggingFab = ref(false)
 const downloadable = ref(false)
 
 const typeOptions = ["终端", "耗材", "电话", "机房", "监控"];
-const places = ["禾花", "鹅公岭", "新南", "白坭坑", "慧明"];
+const places = ["禾花", "鹅公岭", "新南", "白坭坑", "慧明", "创点"];
 
 const keywordState = reactive({
   isEmpty: false,
@@ -467,6 +468,9 @@ watch(
   }
 );
 
+const addPlace = () => {
+  console.log('addPlace');
+}
 
 const showSticky1 = computed(() => {
     return store.searchData.type !== "-请选择-" && store.searchData.place !== "-请选择-"
@@ -815,7 +819,7 @@ const onAddIP = async () => {
       showTable.value = true; 
       openIPDialog.value = false;
       showSticky2.value = true;
-      store.IPData.MAC = store.IPData.MAC.toUpperCase();
+      store.IPData.MAC = store.IPData.MAC.replace(/./g, (char) => char.toUpperCase());
       store.IPData._id = res.data._id;
       store.IPData.updatedAt = res.data.updatedAt;
       tableRows.value.unshift(JSON.parse(JSON.stringify(store.IPData)));

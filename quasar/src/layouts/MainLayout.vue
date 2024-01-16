@@ -90,7 +90,7 @@
             <q-item-section avatar>
               <q-icon name="manage_accounts" :size="store.isMobile? 'sm' : 'md'" color="primary" />
             </q-item-section>
-            <q-item-section class="text-weight-bold">管理页</q-item-section>
+            <q-item-section class="text-weight-bold">用户管理</q-item-section>
           </q-item>
         </q-list>
       </q-drawer>

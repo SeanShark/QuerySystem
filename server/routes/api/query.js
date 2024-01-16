@@ -1,11 +1,4 @@
 const express = require("express");
-const {
-  IP,
-  Printer,
-  Phone,
-  DataCenter,
-  Surveillance,
-} = require("../../Model/MogonDB");
 const Database = require("../../Model/MogonDB");
 const router = express.Router();
 const validate = require("../../components/ValidateEmail.js");
@@ -355,7 +348,7 @@ router.post("/addip", async (req, res) => {
     });
   } else {
     const date = new Date().toLocaleString("zh-cn");
-    const newRecord = new IP({
+    const newRecord = new Database.IP({
       Place: place,
       IP: ip,
       MAC: MAC,
@@ -487,7 +480,7 @@ router.post("/addsurveillance", async (req, res) => {
     });
   }
   const date = new Date().toLocaleString("zh-cn");
-  const newRecord = new Surveillance({
+  const newRecord = new Database.Surveillance({
     Place: place,
     类型: req.body.data.类型,
     IP: ip,

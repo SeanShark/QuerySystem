@@ -380,11 +380,12 @@ const editTask = (list) => {
     },
   })
     .onOk((data) => {
+      const createdAt = date.formatDate(Date.now(), "YYYY-MM-DD-HH:mm:ss");
       if (data === "") {
         return store.failureTip("内容不能为空");
       }
       store
-        .editTodo("todo", list._id, data)
+        .editTodo("todo", list._id, data, createdAt)
         .then(() => {
           store.successTip(store.systemMsg);
         })

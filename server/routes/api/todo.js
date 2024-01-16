@@ -49,7 +49,7 @@ router.post("/addtodo", async (req, res) => {
     });
 
     // Save new post to database
-    await newDatabase.Todo.save().then(() => {
+    await newTodo.save().then(() => {
       return res.status(201).json({
         status: "success",
         msg: "成功增加记录."
@@ -57,6 +57,7 @@ router.post("/addtodo", async (req, res) => {
     })
 
   } catch (error) {
+    console.log(error);
     // Handle errors
     return res.status(500).json({
       status: "error",
@@ -85,18 +86,31 @@ router.put("/", async (req, res) => {
   const id = req.body.id;
   const field = req.body.field;
   const value = req.body.value;
+  const createdAt = req.body.createdAt;
 
   const filter = { _id: id }
-  const update = { [field]: value }
+  // const update = { [field]: value }
 
   try {
-    Database.Todo.findOneAndUpdate(filter, update, { new: true })
-    .then(() =>{
+    // Database.Todo.findOneAndUpdate(filter, update, { new: true })
+    // .then(() =>{
+    //   res.status(201).json({
+    //     status: "success",
+    //     msg: '任务内容已更新!',
+    //   })
+    // })
+    const updateTodo = await Database.Todo.findOneAndUpdate(filter, { "$set": { [field]: value, "createdAt": createdAt }})
+    if (updateTodo) {
       res.status(201).json({
         status: "success",
         msg: '任务内容已更新!',
       })
-    })
+    } else {
+      res.status(404).json({
+        status: "error",
+        msg: "错误，请重试.",
+      });
+    }
   } catch(err) {
     return res.status(401).json({
       status: "error",

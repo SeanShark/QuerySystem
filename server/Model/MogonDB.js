@@ -144,6 +144,10 @@ const UserSchema = new mongoose.Schema({
       type: Boolean,
       default: false
     },
+    '创点': {
+      type: Boolean,
+      default: false
+    },
   },
   loggerSetting: {
     monthRange: {
