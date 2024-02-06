@@ -21,7 +21,14 @@
         </template>
 
         <template #append>
-          <q-btn round dense flat icon="send" @click.stop="createTodo" > 
+          <q-btn 
+            round 
+            dense 
+            flat 
+            icon="send" 
+            :disable="sendBtnOff"
+            @click.stop="createTodo" 
+          > 
             <q-tooltip >
             发送
             </q-tooltip>
@@ -252,6 +259,7 @@ const router = useRouter();
 const store = useUserStore();
 
 const inputRef = ref(null);
+const sendBtnOff = ref(false)
 
 onMounted(async () => {
   let token = localStorage.getItem("token");
@@ -288,6 +296,7 @@ const todoData = reactive({
 
 const createTodo = async () => {
   if (await inputRef.value?.validate()) {
+    sendBtnOff.value = true;
     todoData.owner = store.user.email;
     todoData.createdAt = date.formatDate(Date.now(), "YYYY-MM-DD-HH:mm:ss");
     store
@@ -299,7 +308,10 @@ const createTodo = async () => {
       })
       .catch(() => {
         store.failureTip(store.systemMsg);
-      });
+      })
+      .finally(() => {
+        sendBtnOff.value = false;
+      })
   }
 };
 
