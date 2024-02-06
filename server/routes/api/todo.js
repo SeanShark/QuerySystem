@@ -1,6 +1,6 @@
 const express = require("express");
-const { Todo } = require("../../Model/MogonDB");
-const Database = require("../../Model/MogonDB");
+const { Todo } = require("../../models/exModel");
+const Database = require("../../models/exModel");
 
 const router = express.Router();
 

@@ -1,11 +1,11 @@
 const express = require("express");
-const Database = require("../../Model/MogonDB");
+const Database = require("../../models/exModel");
 const Joi = require("joi");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const key = process.env.jwtSecretKey;
 const router = express.Router();
-const transporter = require("../../Mail/email");
+const transporter = require("../../components/email");
 const svgCaptcha = require('svg-captcha');
 const validate = require("../../components/ValidateEmail.js");
 const { query, validationResult, check, body } = require('express-validator');
@@ -523,6 +523,33 @@ router.post("/loggersetting", async (req, res) => {
     });
   };
 });
+
+/*
+  Personal Information Settings
+*/
+router.post("/personal", async (req, res) => {
+  const user = await Database.User.findOne({ email: req.body.user });
+  if (!user) {
+    return res.status(401).json({
+      status: "error",
+      msg: "用户不存在.",
+    });
+  }
+  user.name = req.body.name;
+  user.gender = req.body.gender;
+  user.birth = req.body.birth;
+  user.phone = req.body.phone;
+  await user.save()
+    .then(() => {
+      res.status(201).json({
+        status: "success",
+        msg: "资料设置成功",
+      });
+    })
+    .catch(err => console.log(err));
+
+})
+
 /*
   SuperUser Fetch All Users
 */
@@ -607,31 +634,7 @@ router.post("/setuser",async (req, res) => {
   }
 });
 
-/*
-  Personal Information Settings
-*/
-router.post("/personal", async (req, res) => {
-  const user = await Database.User.findOne({ email: req.body.user });
-  if (!user) {
-    return res.status(401).json({
-      status: "error",
-      msg: "用户不存在.",
-    });
-  }
-  user.name = req.body.name;
-  user.gender = req.body.gender;
-  user.birth = req.body.birth;
-  user.phone = req.body.phone;
-  await user.save()
-    .then(() => {
-      res.status(201).json({
-        status: "success",
-        msg: "资料设置成功",
-      });
-    })
-    .catch(err => console.log(err));
 
-})
 
 router.delete("/deleteuser", async (req, res) => {
   const user = req.query.user;

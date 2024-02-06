@@ -1,5 +1,5 @@
 const express = require("express");
-const Database = require("../../Model/MogonDB");
+const Database = require("../../models/exModel");
 const router = express.Router();
 const validate = require("../../components/ValidateEmail.js");
 const { query, validationResult, check, body } = require('express-validator');

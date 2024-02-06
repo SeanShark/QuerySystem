@@ -1,15 +1,21 @@
 import { boot } from 'quasar/wrappers'
 import axios from 'axios'
-axios.defaults.baseURL = 'http://10.168.3.3:3000/api';
-// axios.defaults.baseURL = 'http://60890559e8ec.sn.mynetname.net:3000/api';
+
+//Below need to match the server side: cors(corsOptions)--> origin: 'http://yourDomainName:port'
+// axios.defaults.baseURL = 'http://localhost:3000/api';
+axios.defaults.baseURL = 'http://60890559e8ec.sn.mynetname.net:3000/api';
 axios.defaults.timeout = 10000;
+axios.defaults.withCredentials = true;
 // Be careful when using SSR for cross-request state pollution
 // due to creating a Singleton instance here;
 // If any client changes this (global) instance, it might be a
 // good idea to move this instance creation inside of the
 // "export default () => {}" function below (which runs individually
 // for each client)
-const api = axios.create({ baseURL: 'http://60890559e8ec.sn.mynetname.net:3000' })
+// const api = axios.create({ baseURL: 'http://60890559e8ec.sn.mynetname.net:3000' })
+const api = axios.create({ 
+  baseURL: 'http://60890559e8ec.sn.mynetname.net:3000',
+})
 
 export default boot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api

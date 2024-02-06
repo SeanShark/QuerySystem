@@ -96,6 +96,7 @@
       </q-drawer>
 
       <q-drawer 
+        v-if="store.user"
         v-model="rightDrawerOpen" 
         show-if-above side="right" 
         bordered
@@ -103,6 +104,7 @@
         mini-to-overlay
         @mouseover="rigthMiniState = false"
         @mouseout="rigthMiniState = true"
+        
       >
         <q-list>
           <q-item clickable @click="confirmLogout">
@@ -372,7 +374,6 @@ const submitChangePwd = async () => {
   }
 
   const data = {
-    user: store.user.email,
     originPwd: originPwd.value,
     newPwd: newPwd.value,
   };
@@ -415,17 +416,16 @@ const submitSettings = async () => {
       gender: gender.value,
       phone: phone.value,
       birth: birth.value,
-      user: store.user.email,
     }
     changeLoading.value = true;
     await store.axios.post("/user/personal", data)
       .then((res) => {
         if (res.status === 201) {
           settings.value = false;
-          store.user.name = name.value,
-          store.user.gender = gender.value,
-          store.user.phone = phone.value,
-          store.user.birth = birth.value,
+          store.user.userInfo.name = name.value,
+          store.user.userInfo.gender = gender.value,
+          store.user.userInfo.phone = phone.value,
+          store.user.userInfo.birth = birth.value,
           store.successTip(res.data.msg);
         }
       })
@@ -470,9 +470,16 @@ const confirmLogout = () => {
       },
     })
     .onOk(async () => {
-      store.logout();
-      router.push("/index");
-      await store.verifyUser();
+      store.axios
+        .post("/user/logout")
+        .then((res) => {
+          store.successTip(res.data.msg);
+          store.authUser = null
+          router.push("/index");
+        })
+        .catch((err) => {
+          store.failureTip(err.response.data);
+        })
     })
     .onCancel(() => {});
 };
@@ -480,10 +487,10 @@ const confirmLogout = () => {
 onMounted(async () => {
   await store.verifyUser();
   if (store.user) {
-    name.value = store.user.name;
-    gender.value = store.user.gender;
-    phone.value = store.user.phone;
-    birth.value = store.user.birth;
+    name.value = store.user.userInfo.name;
+    gender.value = store.user.userInfo.gender;
+    phone.value = store.user.userInfo.phone;
+    birth.value = store.user.userInfo.birth;
   }
 });
 

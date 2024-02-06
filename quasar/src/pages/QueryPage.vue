@@ -62,9 +62,6 @@
               <template #error>
                 {{ searchItems.errorMsg }}
               </template>
-              <template #append>
-                <q-btn round dense flat icon="add" @click.stop.prevent="addPlace" />
-              </template>
             </q-select>
            
           </div>
@@ -81,7 +78,7 @@
               hide-bottom-space
               lazy-rules="ondemand"
               :options="field"
-              :disable="fieldstate"
+              :disable="fieldState"
             >
               <template #prepend>
                 <q-icon name="add_card" color="primary" @click.stop.prevent />
@@ -287,35 +284,35 @@
     <IPDialog 
       v-model="openIPDialog"
       @edit="onEditIP(store.originalData._id)"
-      @add="onAddIP"
+      @add="onNewIP"
       @canceledit="onCancelEdit"
       @canceladd="onCancelAdd"
     />
     <PhoneDialog 
       v-model="openPhoneDialog"
-      @edit="onEditPhone(store.originalData._id)"
-      @add="onAddPhone"
+      @edit="onUpdatePhone(store.originalData._id)"
+      @add="onNewPhone"
       @canceledit="onCancelEdit"
       @canceladd="onCancelAdd"
     />
     <PrinterDialog 
       v-model="openPrinterDialog"
-      @edit="onEditPrinter(store.originalData._id)"
-      @add="onAddPrinter"
+      @edit="onUpdatePrinter(store.originalData._id)"
+      @add="onNewPrinter"
       @canceledit="onCancelEdit"
       @canceladd="onCancelAdd"
     />
     <DataCenterDialog 
       v-model="openDataCenterDialog"
-      @edit="onEditDataCenter(store.originalData._id)"
-      @add="onAddDataCenter"
+      @edit="onUpdateDataCenter(store.originalData._id)"
+      @add="onNewDataCenter"
       @canceledit="onCancelEdit"
       @canceladd="onCancelAdd"
     />
     <SurveillanceDialog 
       v-model="openSurveillanceDialog"
-      @edit="onEditSurveillance(store.originalData._id)"
-      @add="onAddSurveillance"
+      @edit="onUpdateSurveillance(store.originalData._id)"
+      @add="onNewSurveillance"
       @canceledit="onCancelEdit"
       @canceladd="onCancelAdd"
     />
@@ -348,26 +345,16 @@ const router = useRouter();
 
 onMounted(async () => {
   store.searchData.type = "-请选择-";
-  let token = localStorage.getItem("token");
 
-  if (token !== null) {
-    try {
-      await store
-        .verifyUser()
-        .then(() => {
-          if(!store.user) {
-            router.push("/index");
-          }
-        })
-        .catch(() => {
-          router.push("/index");
-        });
-    } catch (err) {
+  await store.verifyUser()
+    .then(() => {
+      if(!store.user) {
+        router.push("/index");
+      }
+    })
+    .catch(() => {
       router.push("/index");
-    }
-  } else {
-    router.push("/index");
-  }
+    });
 });
 
 const visible = ref(true);
@@ -384,7 +371,7 @@ const openHelpDialog = ref(false);
 const placeRef = ref(null);
 const typeRef = ref(null);
 const fieldRef = ref(null);
-const fieldstate = ref(true);
+const fieldState = ref(true);
 const keywordRef = ref(null);
 const searchLoading = ref(false);
 
@@ -425,12 +412,13 @@ let field = [];
 
 watch(
   () => store.searchData.type,
-  (newValue) => {
+  (newValue, oldValue) => {
     store.selected = [];
     if (newValue === "-请选择-") {
-      fieldstate.value = true;
-    } else {
-      fieldstate.value = false;
+      fieldState.value = true;
+    }
+    else {
+      fieldState.value = false;
       if (newValue === "终端") {
         field = ["IP","姓名",  "MAC", "办公室", "备注"];
         store.searchData.field = "IP";
@@ -448,7 +436,10 @@ watch(
         store.searchData.field = "IP";
       }
     }
-    
+
+    if (newValue !== oldValue) {
+      tableRows.value = []
+    }
   }
 );
 
@@ -468,9 +459,6 @@ watch(
   }
 );
 
-const addPlace = () => {
-  console.log('addPlace');
-}
 
 const showSticky1 = computed(() => {
     return store.searchData.type !== "-请选择-" && store.searchData.place !== "-请选择-"
@@ -572,35 +560,42 @@ const handleSearch = async () => {
   // console.log(store.searchData.field, store.searchData.keyword);
   // return
   searchLoading.value = true;
+  let type = '';
 
+  //need to set value and text
   if (store.searchData.type === "终端") {
+    type = 'ip';
     columns.value = ipColumns;
   } else if (store.searchData.type === "耗材") {
+    type = 'printer';
     columns.value = printerColumns;
   } else if (store.searchData.type === "电话") {
+    type = 'phone';
     columns.value = phoneColumns;
   } 
   else if (store.searchData.type === "机房") {
+    type = 'datacenter';
     columns.value = datacenterColumns;
   } 
   else if (store.searchData.type === "监控") {
+    type = 'surveillance';
     columns.value = surveillanceColumns;
   } 
   else {
     searchLoading.value = false;
-    store.failureTip('错误搜索类型');
+    store.failureTip('错误搜索类型1');
     return;
   }
 
   const queryData = {
-    type: store.searchData.type,
-    place: store.searchData.place,
+    Place: store.searchData.place,
     field: store.searchData.field,
     keyword: keyword,
-    user: store.user.email,
   };
-  
-  await store.axios.get("/query", {params: { queryData }})
+  await store.axios.post("/query", { 
+    data: queryData,
+    type: type
+   })
     .then((res) => {
       if (res.status === 201) {
         showTable.value = true;
@@ -803,17 +798,17 @@ const ipFormValidate = () => {
   
 }
 
-const onAddIP = async () => {
+const onNewIP = async () => {
   if(!ipFormValidate()) {
     return;
   }
   store.addBtnLoading = true;
   const IPData = {
-    user: store.user.email,
-    data: store.IPData
+    data: store.IPData,
+    type: 'ip'
   };
   await store.axios
-    .post("/query/addip", IPData)
+    .post("/query/newip", IPData)
     .then((res) => {
       columns.value = ipColumns;
       showTable.value = true; 
@@ -907,7 +902,7 @@ const printerFormValidate = () => {
 }
 
 
-const onAddPrinter = async () => {
+const onNewPrinter = async () => {
   if (!printerFormValidate()) {
     return;
   }
@@ -916,11 +911,11 @@ const onAddPrinter = async () => {
   store.printerData.硒鼓 = store.printerData.硒鼓.toUpperCase();
 
   const printerData = {
-    user: store.user.email,
-    data: store.printerData
+    data: store.printerData,
+    type: 'printer'
   };
   await store.axios
-    .post("/query/addprinter", printerData)
+    .post("/query/newprinter", printerData)
     .then((res) => {
       columns.value = printerColumns;
       showTable.value = true;
@@ -989,18 +984,18 @@ const phoneFormValidate = () => {
 }
 
 
-const onAddPhone = async () => {
+const onNewPhone = async () => {
   if(!phoneFormValidate()) {
     return;
   }
   store.phoneData.楼层线路 = store.phoneData.楼层线路.toUpperCase();
   store.addBtnLoading = true;
   const phoneData = {
-    user: store.user.email,
     data: store.phoneData,
+    type: 'phone'
   };
   await store.axios
-    .post("/query/addphone", phoneData)
+    .post("/query/newphone", phoneData)
     .then((res) => {
       columns.value = phoneColumns;
       showTable.value = true;
@@ -1066,17 +1061,17 @@ const datacenterFormValidate = () => {
   return true;
 }
 
-const onAddDataCenter = async () => {
+const onNewDataCenter = async () => {
   if(!datacenterFormValidate()) {
     return;
   }
   store.addBtnLoading = true;
   const datacenterData = {
-    user: store.user.email,
     data: store.datacenterData,
+    type: 'datacenter'
   };
   await store.axios
-    .post("/query/adddatacenter", datacenterData)
+    .post("/query/newdatacenter", datacenterData)
     .then((res) => {
       columns.value = datacenterColumns;
       showTable.value = true; 
@@ -1144,18 +1139,18 @@ const surveillanceFormValidate = () => {
   return true;
 }
 
-const onAddSurveillance = async () => {
+const onNewSurveillance = async () => {
   if(!surveillanceFormValidate()) {
     return;
   }
 
   store.addBtnLoading = true;
   const surveillanceData = {
-    user: store.user.email,
     data: store.surveillanceData,
+    type: 'surveillance'
   };
   await store.axios
-    .post("/query/addsurveillance", surveillanceData)
+    .post("/query/newsurveillance", surveillanceData)
     .then((res) => {
       columns.value = surveillanceColumns;
       showTable.value = true; 
@@ -1197,11 +1192,11 @@ const onEditIP = async (id) => {
   clearFormState();
   store.editBtnLoading = true;
   const IPData = {
-    user: store.user.email,
-    data: store.IPData
+    data: store.IPData,
+    type: 'ip'
   };
   await store.axios
-    .put("/query/editip", IPData)
+    .put("/query/updateip", IPData)
     .then((res) => {
       const date = res.data.updatedAt;
       store.IPData.updatedAt = date;
@@ -1241,18 +1236,18 @@ const onEditIP = async (id) => {
 
 };
 
-const onEditPrinter = async (id) => {
+const onUpdatePrinter = async (id) => {
   if (!printerFormValidate()) {
     return;
   }
   store.printerData.数量 = store.printerData.数量? store.printerData.数量 : 0;
   store.editBtnLoading = true;
   const printerData = {
-    user: store.user.email,
-    data: store.printerData
+    data: store.printerData,
+    type: 'printer'
   };
   await store.axios
-    .put("/query/editprinter", printerData)
+    .put("/query/updateprinter", printerData)
     .then((res) => {
       store.printerData.updatedAt = res.data.updatedAt;
       const targetIndex = tableRows.value.findIndex(
@@ -1290,18 +1285,18 @@ const onEditPrinter = async (id) => {
 
 
 
-const onEditPhone = async (id) => {
+const onUpdatePhone = async (id) => {
   if(!phoneFormValidate()) {
     return;
   }
   store.editBtnLoading = true;
   store.phoneData.楼层线路 = store.phoneData.楼层线路.toUpperCase();
   const phoneData = {
-    user: store.user.email,
-    data: store.phoneData
+    data: store.phoneData,
+    type: 'phone'
   };
   await store.axios
-    .put("/query/editphone", phoneData)
+    .put("/query/updatephone", phoneData)
     .then((res) => {
       store.phoneData.updatedAt = res.data.updatedAt;
       const targetIndex = tableRows.value.findIndex(
@@ -1343,7 +1338,7 @@ const onEditPhone = async (id) => {
   
 };
 
-const onEditDataCenter = async (id) => {
+const onUpdateDataCenter = async (id) => {
   if(!datacenterFormValidate()) {
     return;
   }
@@ -1351,11 +1346,11 @@ const onEditDataCenter = async (id) => {
   clearFormState();
   store.addBtnLoading = true;
   const datacenterData = {
-    user: store.user.email,
-    data: store.datacenterData
+    data: store.datacenterData,
+    type: 'datacenter'
   };
   await store.axios
-    .put("/query/editdatacenter", datacenterData)
+    .put("/query/updatedatacenter", datacenterData)
     .then((res) => {
       store.datacenterData.updatedAt =res.data.updatedAt;
 
@@ -1393,7 +1388,7 @@ const onEditDataCenter = async (id) => {
 
 };
 
-const onEditSurveillance = async (id) => {
+const onUpdateSurveillance = async (id) => {
   if(!surveillanceFormValidate()) {
     return;
   }
@@ -1401,11 +1396,11 @@ const onEditSurveillance = async (id) => {
   clearFormState();
   store.addBtnLoading = true;
   const surveillanceData = {
-    user: store.user.email,
-    data: store.surveillanceData
+    data: store.surveillanceData,
+    type: 'surveillance'
   };
   await store.axios
-    .put("/query/editsurveillance", surveillanceData)
+    .put("/query/updatesurveillance", surveillanceData)
     .then((res) => {
       store.surveillanceData.updatedAt = res.data.updatedAt;
 
@@ -1448,7 +1443,6 @@ const onDelete = async (type, id) => {
     params: { 
       type: type,
       id: id,
-      user: store.user.email,
     },
   })
   .then((res) => {

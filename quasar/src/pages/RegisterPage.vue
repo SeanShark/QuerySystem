@@ -212,8 +212,6 @@ const errorData = reactive({
   errorMsg: "",
 });
 
-
-
 const checkPassword = (val) => {
   return val.length >= 8 || "密码长度应该至少为8位数";
 };
@@ -297,8 +295,6 @@ const goToNextStep = async () => {
         .catch((err) => {
           isLoading.value = false;
           store.failureTip(err.response.data.msg);
-          // errorData.errorMsg = err.response.data.msg;
-          // errorData.hasError = true;
         })
         .finally(() => {
           isDone.value = false;
@@ -353,17 +349,14 @@ const captcha = reactive({
 });
 
 onMounted(async () => {
-  getcapcha();
-  const token = localStorage.getItem("token");
-
-  if (token !== null) {
-    await store.verifyUser()
+  await store
+    .verifyUser()
     .then(() => {
-      if(store.user) {
-        router.push("/");
-      }
+      router.push("/");
     })
-  }
+    .catch((err) => {
+      getcapcha();
+    });
 });
 
 const getcapcha = () => {

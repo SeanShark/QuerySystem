@@ -76,7 +76,7 @@
           <q-tab-panel  class="q-pa-none" name="todo" style="min-height: 150px">
             <q-list separator bordered>
               <q-item
-                v-for="(list, index) in store.doingLists"
+                v-for="(list, index) in doingLists"
                 :key="list._id"
                 v-ripple
                 :item="list"
@@ -89,7 +89,7 @@
                     v-model="list.isDone"
                     name="isDone"
                     color="primary"
-                    @click.stop="handleClick('isDone', list._id, list.isDone)"
+                    @click.stop="doneOrDoing('isDone', list._id, list.isDone)"
                   />
                 </q-item-section>
                 <q-item-section>
@@ -112,7 +112,7 @@
                   @click.stop
                 >
                   <q-list>
-                    <q-item v-close-popup clickable @click="editTask(list)">
+                    <q-item v-close-popup clickable @click="todoDialog(list)">
                       <q-item-section avatar>
                         <q-icon name="edit_note" color="primary" size="sm" />
                       </q-item-section>
@@ -151,7 +151,7 @@
               </q-item>
             </q-list>
             <div
-              v-if="!store.doingLists.length"
+              v-if="!doingLists.length"
               class="no-tasks absolute-center"
             >
               <q-icon name="check" size="50px" color="primary" />
@@ -162,7 +162,7 @@
           <q-tab-panel class="q-pa-none" name="done" style="min-height: 150px">
             <q-list separator bordered>
               <q-item
-                v-for="(list, index) in store.doneLists"
+                v-for="(list, index) in doneLists"
                 :key="list._id"
                 v-ripple
                 :item="list"
@@ -174,7 +174,7 @@
                   <q-checkbox
                     v-model="list.isDone"
                     color="primary"
-                    @click.stop="handleClick('isDone', list._id, list.isDone)"
+                    @click.stop="doneOrDoing('isDone', list._id, list.isDone)"
                   />
                 </q-item-section>
                 <q-item-section>
@@ -195,7 +195,7 @@
                   @click.stop
                 >
                   <q-list>
-                    <q-item v-close-popup clickable @click="editTask(list)">
+                    <q-item v-close-popup clickable @click="todoDialog(list)">
                       <q-item-section avatar>
                         <q-icon name="edit_note" color="primary" size="sm" />
                       </q-item-section>
@@ -234,7 +234,7 @@
               </q-item>
             </q-list>
             <div
-              v-if="!store.doneLists.length"
+              v-if="!doneLists.length"
               class="no-tasks absolute-center"
             >
               <q-icon name="check" size="50px" color="primary" />
@@ -255,36 +255,46 @@ import { useUserStore } from "../stores/store";
 import { useRouter } from "vue-router";
 import { date } from "quasar";
 
+
 const router = useRouter();
 const store = useUserStore();
 
 const inputRef = ref(null);
-const sendBtnOff = ref(false)
+const sendBtnOff = ref(false);
 
 onMounted(async () => {
-  let token = localStorage.getItem("token");
-
-  if (token !== null) {
-    try {
-      await store.verifyUser()
-      .then(() => {
-        if(store.user) {
-          store.getTodolists();
-        }
-        else {
-          router.push("/index");
-        }
-      }).catch(() => {
-        router.push("/index");
-      })
-    } catch (err) {
+  // console.log($q.cookies.get('replyauthjwt'));
+  await store.verifyUser()
+    .then(() => {
+      if(store.user) {
+        getTodolists();
+      }
+    }).catch(() => {
       router.push("/index");
-    }
-  } else {
-    router.push("/index");
-  }
+    })
 });
 
+const todolists = ref([]);
+const doingLists = ref([]);
+const doneLists = ref([]);
+
+const getTodolists = async () => {
+  await store.axios.post("/todo/gettodolists", {
+    owner: store.user.userInfo.email
+  })
+  .then((res) => {
+    todolists.value = res.data;
+    doingLists.value = todolists.value.filter(lists => {
+      return lists.isDone === false;
+    })
+    doneLists.value = todolists.value.filter(lists => {
+      return lists.isDone === true;
+    })
+  })
+  .catch((err) => {
+    console.log(err);
+  })
+}
 
 const tab = ref("todo");
 const todoData = reactive({
@@ -297,35 +307,38 @@ const todoData = reactive({
 const createTodo = async () => {
   if (await inputRef.value?.validate()) {
     sendBtnOff.value = true;
-    todoData.owner = store.user.email;
+    todoData.owner = store.user.userInfo.email;
     todoData.createdAt = date.formatDate(Date.now(), "YYYY-MM-DD-HH:mm:ss");
-    store
-      .createTodo(todoData)
-      .then(() => {
-        todoData.todo = "";
-        todoData.color = "text-black";
-        store.successTip(store.systemMsg);
-      })
-      .catch(() => {
-        store.failureTip(store.systemMsg);
-      })
-      .finally(() => {
-        sendBtnOff.value = false;
-      })
+    await store.axios.post("/todo/newtodo/", todoData)
+    .then((res) => {
+      todoData.todo = "";
+      todoData.color = "text-black";
+      store.successTip(res.data.msg);
+      getTodolists();
+    })
+    .catch((err) => {
+      store.failureTip(err.response.data.msg);
+    })
+    .finally(() => {
+      sendBtnOff.value = false;
+    })
   }
 };
 
-const handleClick = (field, id, value) => {
-  setTimeout(() => {
-    store
-      .editTodo(field, id, value)
-      .then(() => {
-        store.successTip(store.systemMsg);
-        store.getTodolists();
-      })
-      .catch(() => {
-        store.failureTip(store.systemMsg);
-      });
+const doneOrDoing = (field, id, value) => {
+  setTimeout(async () => {
+    await store.axios.put("/todo/", {
+      id: id,
+      field: field,
+      value: value,
+    })
+    .then((res) => {
+      store.successTip(res.data.msg);
+      getTodolists();
+    })
+    .catch((err) => {
+      store.failureTip(err.response.data.msg);
+    })
   }, 300);
 };
 
@@ -357,20 +370,37 @@ const confirmDel = (id) => {
       label: "取消",
     },
   })
-    .onOk(async () => {
-      await store
-        .deleteTodo(id)
-        .then(() => {
-          store.successTip(store.systemMsg);
-        })
-        .catch((err) => {
-          store.failureTip(store.systemMsg);
-        });
-    })
-    .onCancel(() => {});
+  .onOk(async () => {
+    await store.axios.delete(`/todo/${id}`)
+      .then((res) => {
+        store.successTip(res.data.msg);
+        getTodolists();
+      })
+      .catch((err) => {
+        store.failureTip(err.response.data.msg);
+      });
+  })
+  .onCancel(() => {});
 };
 
-const editTask = (list) => {
+const updateTodo = async (id, filed, value) => {
+  const createdAt = date.formatDate(Date.now(), "YYYY-MM-DD-HH:mm:ss");
+  await store.axios.put("/todo", {
+    id: id,
+    field: filed,
+    value: value,
+    createdAt: createdAt,
+  })
+  .then((res) => {
+    store.successTip(res.data.msg);
+    getTodolists();
+  })
+  .catch((err) => {
+    store.failureTip(err.response.data.msg);
+  });
+}
+
+const todoDialog = (list) => {
   store.$q.dialog({
     title: "编辑内容",
     message: "请输入需要编辑的内容",
@@ -391,22 +421,16 @@ const editTask = (list) => {
       label: "取消",
     },
   })
-    .onOk((data) => {
-      const createdAt = date.formatDate(Date.now(), "YYYY-MM-DD-HH:mm:ss");
+    .onOk(async (data) => {
       if (data === "") {
         return store.failureTip("内容不能为空");
       }
-      store
-        .editTodo("todo", list._id, data, createdAt)
-        .then(() => {
-          store.successTip(store.systemMsg);
-        })
-        .catch(() => {
-          store.failureTip(store.systemMsg);
-        });
+      updateTodo(list._id, 'todo', data);
     })
     .onCancel(() => {});
 };
+
+
 
 const colorDialog = (list) => {
   store.$q.dialog({
@@ -432,14 +456,7 @@ const colorDialog = (list) => {
       label: "取消",
     },
   }).onOk((color) => {
-    store
-      .editTodo("color", list._id, color)
-      .then(() => {
-        store.successTip(store.systemMsg);
-      })
-      .catch((err) => {
-        store.failureTip(store.systemMsg);
-      });
+    updateTodo(list._id, 'color', color)
   });
 };
 </script>

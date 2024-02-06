@@ -26,9 +26,9 @@
       >
         <div
           class="coloum text-center text-h6 q-pa-md"
-          :class="user.banned ? 'text-strike' : ''"
+          :class="user.userInfo.banned ? 'text-strike' : ''"
         >
-          {{ user.email }}
+          {{ user.userInfo.email }}
           <q-avatar
             v-if="user.userPrivilege.superUser"
             text-color="red"
@@ -40,7 +40,7 @@
             </q-tooltip>
           </q-avatar>
           <q-avatar
-            v-if="user.activationCode != null"
+            v-if="user.userInfo.activationCode != null"
             text-color="warning"
             icon="question_mark"
             size="lg"
@@ -51,7 +51,7 @@
           </q-avatar>
 
           <q-avatar
-            v-if="user.banned"
+            v-if="user.userInfo.banned"
             text-color="grey"
             icon="person_off"
             size="lg"
@@ -70,31 +70,31 @@
         >
           <q-card class="shadow-3">
             <q-card-section>
-              <q-input v-model="user.name" dense flat readonly item-aligned>
+              <q-input v-model="user.userInfo.name" dense flat readonly item-aligned>
                 <template #before>
                   <div class="text-subtitle2">姓名：</div>
                 </template>
               </q-input>
-              <q-input v-model="user.phone" dense flat readonly item-aligned>
+              <q-input v-model="user.userInfo.phone" dense flat readonly item-aligned>
                 <template #before>
                   <div class="text-subtitle2">电话：</div>
                 </template>
               </q-input>
 
-              <q-input v-model="user.gender" dense flat readonly item-aligned>
+              <q-input v-model="user.userInfo.gender" dense flat readonly item-aligned>
                 <template #before>
                   <div class="text-subtitle2">性别：</div>
                 </template>
               </q-input>
 
-              <q-input v-model="user.birth" dense flat readonly item-aligned>
+              <q-input v-model="user.userInfo.birth" dense flat readonly item-aligned>
                 <template #before>
                   <div class="text-subtitle2">生日:</div>
                 </template>
               </q-input>
 
               <q-input
-                v-model="user.createdAt"
+                v-model="user.userInfo.createdAt"
                 dense
                 flat
                 readonly
@@ -106,7 +106,7 @@
               </q-input>
 
               <q-input
-                v-model="user.lastLogin"
+                v-model="user.userInfo.lastLogin"
                 dense
                 flat
                 readonly
@@ -124,12 +124,12 @@
           icon="task_alt"
           label="操作权限"
           header-class="text-primary"
-          :disable="user.banned"
+          :disable="user.userInfo.banned"
         >
           <q-card>
             <q-card-section>
               <q-toggle
-                v-if="user.email !== '47262243@qq.com'"
+                v-if="user.userInfo.email !== '47262243@qq.com'"
                 v-model="user.userPrivilege.superUser"
                 name="user.userPrivilege.superUser"
                 color="green"
@@ -182,7 +182,7 @@
           icon="drafts"
           label="访问类型"
           header-class="text-teal"
-          :disable="user.banned"
+          :disable="user.userInfo.banned"
         >
           <q-card>
             <q-card-section>
@@ -234,7 +234,7 @@
           icon="place"
           label="地点控制"
           header-class="text-info"
-          :disable="user.banned"
+          :disable="user.userInfo.banned"
         >
           <q-card>
             <q-card-section>
@@ -290,12 +290,12 @@
           </q-card>
         </q-expansion-item>
         <q-expansion-item
-          v-if="user.email !== store.user.email"
+          v-if="user.userInfo.email !== store.user.userInfo.email"
           expand-separator
           icon="manage_accounts"
           label="账户管理"
           header-class="text-indigo"
-          :disable="user.banned"
+          :disable="user.userInfo.banned"
         >
           <q-card>
             <q-card-section>
@@ -303,12 +303,12 @@
                 class="row justify-around"
               >
                 <q-toggle
-                  v-model="user.banned"
+                  v-model="user.userInfo.banned"
                   color="green"
                   label="禁用该账户"
                   left-label
                   :disable="clickable"
-                  @click="updateUser(user._id, 'banned', user.banned)"
+                  @click="updateUser(user._id, 'banned', user.userInfo.banned)"
                 />
                 <q-btn 
                   label="删除该用户"
@@ -353,87 +353,85 @@ const updateUser = async (id, field, value) => {
     id: id,
     field: field,
     value: value,
-    user: store.user.email
   };
   await store.axios
-  .post("/user/setuser", data)
-  .then((res) => {
-    if (res.status === 201) {
-      store.successTip(res.data.msg)
-    } 
-  })
-  .catch((err) => {
-    store.failureTip(err.response.data.msg)
-  })
-  .finally(() => {
-    clickable.value = false;
-  });
+    .post("/user/setuser", data)
+    .then((res) => {
+      if (res.status === 201) {
+        store.successTip(res.data.msg)
+      } 
+    })
+    .catch((err) => {
+      store.failureTip(err.response.data.msg)
+    })
+    .finally(() => {
+      clickable.value = false;
+    });
 };
 
 const filteredUser = computed(() => {
   const searchTerm = filter.value.toLowerCase().trim();
   if (!searchTerm) return originalUsers.value; 
-  return originalUsers.value.filter(user => user.email.toLowerCase().includes(searchTerm));
+  return originalUsers.value.filter(user => user.userInfo.email.toLowerCase().includes(searchTerm));
 });
 
 
 const confirmDeleteUser = async (id) => {
-      store.$q.dialog({
-        title: '确认删除',
-        message: '确认要删除该用户吗？',
-        cancel: true,
-        persistent: true,
-        ok: {
-          push: true,
-          label: "确定",
-          color: "green",
-        },
-        cancel: {
-          push: true,
-          color: "grey",
-          label: "取消",
-        },
-      }).onOk(async () => {
-        await store.axios.delete("/user/deleteuser", {
-          params: {
-            id: id,
-            user: store.user.email,
-          },
-        })
-        .then((res) => {
-          if(res.status === 201) {
-            originalUsers.value = originalUsers.value.filter((lists) => lists._id !== id);
-            store.successTip(res.data.msg);
-          }
-        })
-        .catch((err) => {
-          store.failureTip(err.response.data.msg)
-        })
-      }).onCancel(() => {
-        // console.log('>>>> Cancel')
-      }).onDismiss(() => {
-        // console.log('I am triggered on both OK and Cancel')
-      })
-    }
+  store.$q.dialog({
+    title: '确认删除',
+    message: '确认要删除该用户吗？',
+    cancel: true,
+    persistent: true,
+    ok: {
+      push: true,
+      label: "确定",
+      color: "green",
+    },
+    cancel: {
+      push: true,
+      color: "grey",
+      label: "取消",
+    },
+  }).onOk(async () => {
+    await store.axios.delete("/user/deleteuser", {
+      params: {
+        id: id
+      },
+    })
+    .then((res) => {
+      if(res.status === 201) {
+        originalUsers.value = originalUsers.value.filter((lists) => lists._id !== id);
+        store.successTip(res.data.msg);
+      }
+    })
+    .catch((err) => {
+      store.failureTip(err.response.data.msg)
+    })
+  }).onCancel(() => {
+    // console.log('>>>> Cancel')
+  }).onDismiss(() => {
+    // console.log('I am triggered on both OK and Cancel')
+  })
+}
 
 onMounted(async () => {
-  try {
-    await store.verifyUser();
-    if (store.user) {
-      store.axios
-        .post("/user/alluser", { user: store.user.email })
-        .then((res) => {
-          originalUsers.value = res.data;
-        })
-        .catch((err) => {
-          console.log(err.response.data.msg);
-        });
-    } else {
+  await store.verifyUser()
+    .then(() => {
+      if (store.user) {
+        // console.log(store.user.userInfo.email);
+        store.axios
+          .post("/user/alluser")
+          .then((res) => {
+            originalUsers.value = res.data;
+          })
+          .catch((err) => {
+            console.log(err.response.data.msg);
+          });
+      }
+    })
+    .catch(() => {
       router.push("/index");
-    }
-  } catch (err) {
-    router.push("/index");
-  }
+    })
 });
 
 

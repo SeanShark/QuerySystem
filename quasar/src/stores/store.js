@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import axios from "axios";
-import { store } from "quasar/wrappers";
 import { reactive } from "vue";
 import { useQuasar, date } from "quasar";
 
@@ -14,9 +13,6 @@ export const useUserStore = defineStore("datastore", {
     isDisabled: false,
     postStatus: false,
     selected: [],
-    todolists: [],
-    doingLists: [],
-    doneLists: [],
     checkLists: [],
     filteredLists: [],
     systemMsg: "",
@@ -138,29 +134,22 @@ export const useUserStore = defineStore("datastore", {
         })
         .catch((err) => {
 
-          //console.log(err.response.data.msg);
         });
     },
     async verifyUser() {
       return new Promise((resolve, reject) => {
-        const token = localStorage.getItem("token");
         axios
-          .get("/user/verifyuser", {
-            headers: { token: token },
-          })
+          .post("/user/verifyuser")
           .then((res) => {
+            
             this.authUser = res.data.user;
-            resolve(); // Resolve the promise when user verification is complete
+            resolve(); 
           })
           .catch((err) => {
             this.authUser = null;
-            reject(err); // Reject the promise if an error occurs
+            reject(err); 
           });
       });
-    },
-    logout () {
-      localStorage.clear();
-      store.authUser = null;
     },
     failureTip (msg) {
       this.$q.notify({
@@ -175,76 +164,6 @@ export const useUserStore = defineStore("datastore", {
         progress: true,
         message: `${msg}`,
       });
-    },    
-    getTodolists () {
-      return new Promise(async (resolve, reject) => {
-        await axios.post("/todo/gettodolists", {
-          owner: this.user.email
-        })
-        .then((res) => {
-          this.todolists = res.data;
-          this.doingLists = this.todolists.filter(lists => {
-            return lists.isDone === false;
-          })
-          this.doneLists = this.todolists.filter(lists => {
-            return lists.isDone === true;
-          })
-
-          resolve();
-        })
-        .catch((err) => {
-          console.log(err);
-          reject(err);
-        })
-      })
-    },
-    async createTodo (todoData) {
-      return new Promise(async (resolve, reject) => {
-        await axios.post("/todo/addtodo/", todoData)
-        .then((res) => {
-          this.systemMsg = res.data.msg;
-          this.getTodolists();
-          resolve();
-        })
-        .catch((err) => {
-          this.systemMsg = err.response.data.msg;
-          reject(err);
-        })
-      })
-    },
-    editTodo (field, id, value, createdAt) {
-      return new Promise(async (resolve, reject) => {
-        await axios.put("/todo/", {
-          id: id,
-          field: field,
-          value: value,
-          createdAt: createdAt,
-        })
-        .then((res) => {
-          this.systemMsg = res.data.msg;
-          this.getTodolists();
-          resolve();
-        })
-        .catch((err) => {
-          this.systemMsg = err.response.data.msg;
-          console.log(err);
-          reject(err);
-        })
-      })
-    },
-    deleteTodo (id) {
-      return new Promise(async (resolve, reject) => {
-        await axios.delete(`/todo/${id}`)
-        .then((res) => {
-          this.systemMsg = res.data.msg;
-          this.getTodolists();
-          resolve();
-        })
-        .catch((err) => {
-          this.systemMsg = err.response.data.msg;
-          reject(err);
-        })
-      })
     },
   },
 });

@@ -133,16 +133,11 @@ const isLoading = ref(false);
 
 
 onMounted(async () => {
-  const token = localStorage.getItem("token");
-
-  if (token !== null) {
-    await store.verifyUser()
+  await store
+    .verifyUser()
     .then(() => {
-      if(store.user) {
-        router.push("/");
-      }
+      router.push("/");
     })
-  }
 });
 
 const loginInfo = reactive({
@@ -173,11 +168,14 @@ const loginSubmit = async () => {
     return;
   }
   isLoading.value = true;
+  /*
+  await store.axios
+    .post("/user/login", loginInfo, { withCredentials: true })
+  */
   await store.axios
     .post("/user/login", loginInfo)
     .then(async (res) => {
       if (res.status === 200) {
-        localStorage.setItem("token", res.data.token);
         await store
           .verifyUser()
           .then(() => {
@@ -185,9 +183,6 @@ const loginSubmit = async () => {
             store.successTip("成功登录");
             router.push("/");
           })
-          .catch((err) => {
-            console.log(err);
-          });
       }
     })
     .catch((err) => {
@@ -202,6 +197,7 @@ const loginSubmit = async () => {
         store.store.failureTip(err.response.data.msg);
       }
     });
+  
 };
 
 </script>

@@ -44,7 +44,7 @@
               flat
               icon="send"
               :color="inputLight ? 'primary' : 'grey'"
-              @click="addLogger"
+              @click="newLogger"
             />
           </template>
         </q-input>
@@ -80,7 +80,7 @@
                   class="q-px-md"
                   color="primary"
                   :disable="isDisable"
-                  @click="editLogger(list._id, list.logger, list.date, index)"
+                  @click="updateLogger(list._id, list.logger, list.date, index)"
                 >
 
                 </q-btn>
@@ -339,7 +339,6 @@ const calenderSetting = async () => {
     (await eventColoRef.value?.validate())
   ) {
     const loggerSettings = {
-      user: store.user.email,
       monthRange: monthRange.value,
       themeColor: themeColor.value,
       eventColor: eventColor.value,
@@ -359,11 +358,9 @@ const calenderSetting = async () => {
 
 const getLoggerList = async () => {
   await store.axios
-    .get("/query/logger", {
-      params: {
-        user: store.user.email,
-        month: monthRange.value,
-      },
+    .post("/logger/logger", {
+      month: monthRange.value,
+      user: store.user.userInfo.email,
     })
     .then((res) => {
       loggerLists.value = res.data;
@@ -390,17 +387,17 @@ const onCancel = (index) => {
   visibleBtn.value = false;
 };
 
-const addLogger = async () => {
+const newLogger = async () => {
   if (!selectedDate.value) {
     store.failureTip('请选择日期');
     return;
   }
   if (loggerData.logger.length > 0) {
     loggerData.date = selectedDate.value;
-    loggerData.user = store.user.email;
+    loggerData.user = store.user.userInfo.email;
 
     await store.axios
-      .post("/query/addlogger", loggerData)
+      .post("/logger/newlogger", loggerData)
       .then((res) => {
         if (res.data.id) {
           loggerData._id = res.data.id;
@@ -428,16 +425,15 @@ const addLogger = async () => {
   }
 };
 
-const editLogger = async (id, log, date, index) => {
+const updateLogger = async (id, log, date, index) => {
   if (log === "<br><ul><li>" || log === "<div><br></div>" || log.length === 0) {
     confirmDel(id, index);
   } else {
     loggerData._id = id;
     loggerData.date = date;
-    loggerData.user = store.user.email;
     loggerData.logger = log;
     await store.axios
-      .post("/query/editlogger", loggerData)
+      .post("/logger/updateLogger", loggerData)
       .then((res) => {
         loggerLists.value[index].logger = log;
         initialLoggerContent.value = loggerLists.value.map(
@@ -478,10 +474,9 @@ const confirmDel = (id, index) => {
     })
     .onOk(async () => {
       await store.axios
-        .delete("/query/deletelogger", {
+        .delete("/logger/deletelogger", {
           params: {
             id: id,
-            user: store.user.email,
           },
         })
         .then((res) => {
@@ -502,33 +497,20 @@ const confirmDel = (id, index) => {
 };
 
 onMounted(async () => {
-  let token = localStorage.getItem("token");
-
-  if (token !== null) {
-    try {
-      await store
-        .verifyUser()
-        .then(() => {
-          if(store.user) {
-            monthRange.value = store.user.loggerSetting.monthRange;
-            themeColor.value = store.user.loggerSetting.themeColor;
-            eventColor.value = store.user.loggerSetting.eventColor;
-            getLoggerList();
-          }
-          else {
-            router.push("/index");
-          }
-        })
-        .catch(() => {
-          router.push("/index");
-        });
-    } catch (err) {
-      console.log(err);
+  await store
+    .verifyUser()
+    .then(() => {
+      if(store.user) {
+        monthRange.value = store.user.loggerSetting.monthRange;
+        themeColor.value = store.user.loggerSetting.themeColor;
+        eventColor.value = store.user.loggerSetting.eventColor;
+        getLoggerList();
+      }
+    })
+    .catch(() => {
       router.push("/index");
-    }
-  } else {
-    router.push("/index");
-  }
+    });
+  
   isLogged.value = true;
 });
 </script>

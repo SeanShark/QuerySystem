@@ -353,16 +353,16 @@ const captcha = reactive({
 
 onMounted(async () => {
   getcapcha();
-  const token = localStorage.getItem("token");
-
-  if (token !== null) {
-  await store.verifyUser()
-  .then(() => {
-    if(store.user) {
+  await store
+    .verifyUser()
+    .then(() => {
+      isLoading.value = false;
+      store.successTip("成功登录");
       router.push("/");
-    }
-  })
-  }
+    })
+    .catch((err) => {
+      
+    });
 });
 
 const getcapcha = () => {
