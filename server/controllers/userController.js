@@ -31,8 +31,6 @@ const loginAuth = async (req, res, next) => {
     // console.log(user._id.toString());
     const idToString = user._id.toString()
     generateToken(res, idToString);
-    user.userInfo.lastLogin = new Date();
-    await user.save();
     res.status(200).json({
       status: "success",
       msg: "验证成功"
@@ -50,6 +48,10 @@ const loginAuth = async (req, res, next) => {
   Verify user's cookie, asign User's infomation.
 */
 const verifyUser = async (req, res, next) => {
+  const user = await User.findById(req.id);
+
+  user.userInfo.lastLogin = new Date();
+  await user.save();
   return res.status(200).json({ user: req.user });
 }
 
@@ -155,7 +157,7 @@ const registerStepThree = async (req, res) => {
     }
     user.userInfo.password = password;
     user.userInfo.activationCode = null;
-    user.save();
+    await user.save();
 
     res.status(201).json({
       status: "success",
@@ -227,7 +229,10 @@ const forgotStepTwo = async (req, res) => {
   const { code, email } = req.body;
   try {
     const user = await User.findOne({
-      $and: [{ 'userInfo.email': email }, { 'userInfo.forgotCode': code }],
+      $and: [
+        { 'userInfo.email': email }, 
+        { 'userInfo.forgotCode': code }
+      ],
     });
     if (user) {
       res.status(200).json({
@@ -256,7 +261,10 @@ const forgotStepThree = async (req, res) => {
   const { email, code, password } = req.body;
   try {
     const user = await User.findOne({
-      $and: [{ 'userInfo.email': email }, { 'userInfo.forgotCode': code }],
+      $and: [
+        { 'userInfo.email': email }, 
+        { 'userInfo.forgotCode': code }
+      ],
     });
     if (!user) {
       return res.status(401).json({

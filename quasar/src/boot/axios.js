@@ -2,8 +2,8 @@ import { boot } from 'quasar/wrappers'
 import axios from 'axios'
 
 //Below need to match the server side: cors(corsOptions)--> origin: 'http://yourDomainName:port'
-// axios.defaults.baseURL = 'http://localhost:3000/api';
-axios.defaults.baseURL = 'http://60890559e8ec.sn.mynetname.net:3000/api';
+axios.defaults.baseURL = 'http://localhost:3000/api';
+// axios.defaults.baseURL = 'http://60890559e8ec.sn.mynetname.net:3000/api';
 axios.defaults.timeout = 10000;
 axios.defaults.withCredentials = true;
 // Be careful when using SSR for cross-request state pollution

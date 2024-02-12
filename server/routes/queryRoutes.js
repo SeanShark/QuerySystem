@@ -21,6 +21,8 @@ router.put("/updatedatacenter", protect, allowDatabase, customerControl, updateA
 router.post("/newsurveillance", protect, allowDatabase, customerControl, addAuth, queryControllers.newSurveillance);
 router.put("/updatesurveillance", protect, allowDatabase, customerControl, updateAuth, queryControllers.updateSurveillance);
 
+//If the user do not have the permisions of the customer or type of database,
+//He cannot query the results to delete. He can only delete what he permit to get.
 router.delete("/delete", protect, deleteAuth, queryControllers.deleteRecord);
 
 export default router;

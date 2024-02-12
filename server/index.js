@@ -24,8 +24,8 @@ The origin field:
 const corsOptions = {
   exposedHeaders: "Captcha",
   credentials: true,
-  // origin: 'http://localhost:9000',
-  origin: 'http://60890559e8ec.sn.mynetname.net:3000',
+  origin: 'http://localhost:9000',
+  // origin: 'http://60890559e8ec.sn.mynetname.net:3000',
 };
 
 //Middle ware
@@ -34,12 +34,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cors(corsOptions));
 app.use(cookieParser());
 
-
 app.use('/api/user', userRoutes);
 app.use('/api/todo', todoRoutes);
 app.use('/api/query', queryRoutes);
 app.use('/api/logger', loggerRoutes);
-
 
 if (process.env.NODE_ENV === 'prodution') {
   const __dirname = path.resolve();

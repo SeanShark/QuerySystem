@@ -14,9 +14,6 @@ const adminUser = (async (req, res, next) => {
 })
 
 const allowDatabase = (async (req, res, next) => {
-  //below query
-  // let database = "databasePermissions." + req.body.data.type
-  //below new ip
   let database = "databasePermissions." + req.body.type
 
   // console.log('allowDatabase',database, req.body);
@@ -31,7 +28,7 @@ const allowDatabase = (async (req, res, next) => {
     if(!authUser) {
       return res.status(401).json({
         title: "error",
-        msg: "您没有权限访问该数据2。",
+        msg: "您没有权限访问该数据。",
       });
     }
     next();
@@ -60,7 +57,7 @@ const customerControl = (async (req, res, next) => {
     if(!authUser) {
       return res.status(401).json({
         title: "error",
-        msg: "您没有权限访问该单位3。",
+        msg: "您没有权限访问该单位。",
       });
     } else {
       next();

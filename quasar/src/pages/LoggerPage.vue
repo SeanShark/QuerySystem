@@ -44,6 +44,7 @@
               flat
               icon="send"
               :color="inputLight ? 'primary' : 'grey'"
+              :disable="sendBtnOff"
               @click="newLogger"
             />
           </template>
@@ -79,7 +80,7 @@
                   label="修 改"
                   class="q-px-md"
                   color="primary"
-                  :disable="isDisable"
+                  :disable="sendBtnOff"
                   @click="updateLogger(list._id, list.logger, list.date, index)"
                 >
 
@@ -289,6 +290,7 @@ const store = useUserStore();
 const router = useRouter();
 
 const inputLight = ref(false);
+const sendBtnOff = ref(false);
 const selectedDate = ref(store.todayDate);
 const loggerLists = ref([]);
 const events = ref([]);
@@ -299,7 +301,6 @@ const visibleBtn = ref(false);
 const readonlyEditor = ref(true);
 const isLogged = ref(false);
 const initialLoggerContent = ref([]);
-const isDisable = ref(false);
 const monthOption = [1, 3, 6, 0];
 const themeColoRef = ref(null);
 const eventColoRef = ref(null);
@@ -395,7 +396,7 @@ const newLogger = async () => {
   if (loggerData.logger.length > 0) {
     loggerData.date = selectedDate.value;
     loggerData.user = store.user.userInfo.email;
-
+    sendBtnOff.value = true;
     await store.axios
       .post("/logger/newlogger", loggerData)
       .then((res) => {
@@ -421,6 +422,7 @@ const newLogger = async () => {
       })
       .finally(() => {
         loggerData.logger = "";
+        sendBtnOff.value = false;
       });
   }
 };
@@ -429,6 +431,7 @@ const updateLogger = async (id, log, date, index) => {
   if (log === "<br><ul><li>" || log === "<div><br></div>" || log.length === 0) {
     confirmDel(id, index);
   } else {
+    sendBtnOff.value = true;
     loggerData._id = id;
     loggerData.date = date;
     loggerData.logger = log;
@@ -450,6 +453,7 @@ const updateLogger = async (id, log, date, index) => {
         loggerData._id = "";
         visibleBtn.value = false;
         readonlyEditor.value = true;
+        sendBtnOff.value = false;
       });
   }
 };
