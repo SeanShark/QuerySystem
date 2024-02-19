@@ -239,52 +239,52 @@
           <q-card>
             <q-card-section>
               <q-toggle
-                v-model="user.placeAccess.禾花"
+                v-model="user.customerAccess.禾花"
                 color="green"
                 label="禾花"
                 left-label
                 :disable="clickable"
-                @click="updateUser(user._id, 'placeAccess.禾花', user.placeAccess.禾花)"
+                @click="updateUser(user._id, 'customerAccess.禾花', user.customerAccess.禾花)"
               />
               <q-toggle
-                v-model="user.placeAccess.新南"
+                v-model="user.customerAccess.新南"
                 color="green"
                 label="新南"
                 left-label
                 :disable="clickable"
-                @click="updateUser(user._id, 'placeAccess.新南', user.placeAccess.新南)"
+                @click="updateUser(user._id, 'customerAccess.新南', user.customerAccess.新南)"
               />
               <q-toggle
-                v-model="user.placeAccess.鹅公岭"
+                v-model="user.customerAccess.鹅公岭"
                 color="green"
                 label="鹅公岭"
                 left-label
                 :disable="clickable"
-                @click="updateUser(user._id, 'placeAccess.鹅公岭', user.placeAccess.鹅公岭)"
+                @click="updateUser(user._id, 'customerAccess.鹅公岭', user.customerAccess.鹅公岭)"
               />
               <q-toggle
-                v-model="user.placeAccess.白坭坑"
+                v-model="user.customerAccess.白坭坑"
                 color="green"
                 label="白坭坑"
                 left-label
                 :disable="clickable"
-                @click="updateUser(user._id, 'placeAccess.白坭坑', user.placeAccess.白坭坑)"
+                @click="updateUser(user._id, 'customerAccess.白坭坑', user.customerAccess.白坭坑)"
               />
               <q-toggle
-                v-model="user.placeAccess.慧明"
+                v-model="user.customerAccess.慧明"
                 color="green"
                 label="慧明"
                 left-label
                 :disable="clickable"
-                @click="updateUser(user._id, 'placeAccess.慧明', user.placeAccess.慧明)"
+                @click="updateUser(user._id, 'customerAccess.慧明', user.customerAccess.慧明)"
               />
               <q-toggle
-                v-model="user.placeAccess.创点"
+                v-model="user.customerAccess.创点"
                 color="green"
                 label="创点"
                 left-label
                 :disable="clickable"
-                @click="updateUser(user._id, 'placeAccess.创点', user.placeAccess.创点)"
+                @click="updateUser(user._id, 'customerAccess.创点', user.customerAccess.创点)"
               />
             </q-card-section>
           </q-card>

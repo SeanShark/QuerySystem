@@ -150,7 +150,7 @@
                     'removeFormat',
                   ],
                   ['viewsource'],
-                  ['edit'],
+                  ['update'],
                 ]"
                 :fonts="{
                   arial: 'Arial',

@@ -8,11 +8,11 @@
     <q-card>
       <q-toolbar
         class="text-white"
-        :class="store.isAdd ? 'bg-light-green' : 'bg-light-blue'"
+        :class="store.isCreate ? 'bg-light-green' : 'bg-light-blue'"
       >
-        <q-icon :name="store.isAdd ? 'add' : 'edit'" />
+        <q-icon :name="store.isCreate ? 'create' : 'update'" />
         <q-toolbar-title>{{
-          store.isAdd ? "增加记录" : "编辑内容"
+          store.isCreate ? "增加记录" : "编辑内容"
         }}</q-toolbar-title>
         <q-btn
           v-close-popup
@@ -20,7 +20,7 @@
           round
           dense
           icon="close"
-          @click.stop="store.isAdd ? $emit('canceladd') : $emit('canceledit')"
+          @click.stop="store.isCreate ? $emit('cancelcreate') : $emit('cancelupdate')"
         />
       </q-toolbar>
       <q-separator />
@@ -32,7 +32,7 @@
         >
           <div class="row">
             <q-input
-              v-model="store.searchData.type"
+              label="机房"
               class="col-6"
               flat
               lazy-rules="ondemand"
@@ -44,7 +44,7 @@
               </template>
             </q-input>
             <q-input
-              v-model="store.searchData.place"
+              v-model="store.searchData.customer"
               class="col-6"
               lazy-rules="ondemand"
               readonly
@@ -56,55 +56,55 @@
           </div>
 
           <q-input
-            v-model="store.datacenterData.名称"
+            v-model="store.Data.Datacenter.名称"
             filled
             label="名称"
             lazy-rules="ondemand"
             hide-bottom-space
-            :error="store.datacenterFormState.nameError"
+            :error="store.formState.Datacenter.nameError"
           >
             <template #prepend>
               <q-icon name="turned_in" />
             </template>
             <template #error>
-              {{ store.datacenterFormState.errorMsg }}
+              {{ store.formState.Datacenter.errorMsg }}
             </template>
           </q-input>
 
           <q-input
-            v-model="store.datacenterData.IP"
+            v-model="store.Data.Datacenter.IP"
             filled
             label="IP"
             use-input
             hide-bottom-space
-            :error="store.datacenterFormState.IPError"
+            :error="store.formState.Datacenter.IPError"
           >
             <template #prepend>
               <q-icon name="lan" />
             </template>
             <template #error>
-              {{ store.datacenterFormState.errorMsg }}
+              {{ store.formState.Datacenter.errorMsg }}
             </template>
           </q-input>
 
           <q-input
-            v-model="store.datacenterData.用户名"
+            v-model="store.Data.Datacenter.用户名"
             filled
             label="用户名"
             lazy-rules="ondemand"
             hide-bottom-space
-            :error="store.datacenterFormState.userError"
+            :error="store.formState.Datacenter.userError"
           >
             <template #prepend>
               <q-icon name="account_circle" />
             </template>
             <template #error>
-              {{ store.datacenterFormState.errorMsg }}
+              {{ store.formState.Datacenter.errorMsg }}
             </template>
           </q-input>
 
           <q-input
-            v-model="store.datacenterData.密码"
+            v-model="store.Data.Datacenter.密码"
             filled
             label="密码"
             hide-bottom-space
@@ -115,7 +115,7 @@
           </q-input>
 
           <q-input
-            v-model="store.datacenterData.备注"
+            v-model="store.Data.Datacenter.备注"
             type="textarea"
             autogrow
             filled
@@ -125,14 +125,21 @@
               <q-icon name="comment" />
             </template>
           </q-input>
+          <div>
+            <UploadComponent />
+          </div>
+
+          <div v-if="store.Data[store.searchData.type].hasPic">
+            <ImageComponent />
+          </div>
           <div class="row q-gutter-sm justify-end q-mt-lg">
             <q-btn
               color="primary"
-              :icon="store.isAdd ? 'add' : 'edit'"
+              :icon="store.isCreate ? 'create' : 'update'"
               :class="store.isMobile ? 'col-12' : 'col-3'"
-              :label="store.isAdd ? '增 加' : '编 辑'"
-              :loading="store.addBtnLoading"
-              @click="store.isAdd ? $emit('add') : $emit('edit')"
+              :label="store.isCreate ? '增 加' : '编 辑'"
+              :loading="store.btnLoading"
+              @click="store.isCreate ? $emit('create') : $emit('update')"
             />
             <q-btn
               v-close-popup
@@ -141,7 +148,7 @@
               label="取 消"
               :class="store.isMobile ? 'col-12' : 'col-3'"
               @click.stop="
-                store.isAdd ? $emit('canceladd') : $emit('canceledit')
+                store.isCreate ? $emit('cancelcreate') : $emit('cancelupdate')
               "
             />
           </div>
@@ -154,6 +161,8 @@
 <script setup>
 import { useUserStore } from "../stores/store";
 const store = useUserStore();
+import UploadComponent from "./UploadComponent.vue";
+import ImageComponent from "./ImageComponent.vue";
 
 const props = defineProps({
   modelValue: {
@@ -162,6 +171,6 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["canceladd", "canceledit", "add", "edit"]);
+const emit = defineEmits(["cancelcreate", "cancelupdate", "create", "update"]);
 
 </script>

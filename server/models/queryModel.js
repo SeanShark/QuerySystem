@@ -1,8 +1,7 @@
 import mongoose from "mongoose";
 
-
 const IPSchema = new mongoose.Schema({
-  Place: {
+  customer: {
     type: String,
     required: true,
   },
@@ -27,13 +26,21 @@ const IPSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  hasPic: {
+    type: Boolean,
+    default: false,
+  },
+  Buffer: {
+    type: Buffer,
+    default: null
+  },
   updatedAt: {
     type: String,
   }
 });
 
 const PrinterSchema = new mongoose.Schema({
-  Place: {
+  customer: {
     type: String,
     required: true,
   },
@@ -65,6 +72,14 @@ const PrinterSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  hasPic: {
+    type: Boolean,
+    default: false,
+  },
+  Buffer: {
+    type: Buffer,
+    default: null
+  },
   updatedAt: {
     type: String,
   }
@@ -89,16 +104,28 @@ const PhoneSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  Place: {
+  customer: {
     type: String,
     required: true,
+  },
+  hasPic: {
+    type: Boolean,
+    default: false,
+  },
+  Buffer: {
+    type: Buffer,
+    default: null
   },
   updatedAt: {
     type: String,
   }
 });
 
-const DataCenterSchema = new mongoose.Schema({
+const DatacenterSchema = new mongoose.Schema({
+  customer: {
+    type: String,
+    required: true,
+  },
   名称: {
     type: String,
     required: true,
@@ -117,16 +144,20 @@ const DataCenterSchema = new mongoose.Schema({
   备注:{
     type: String,
   },
-  Place: {
-    type: String,
-    required: true,
+  hasPic: {
+    type: Boolean,
+    default: false,
+  },
+  Buffer: {
+    type: Buffer,
+    default: null
   },
   updatedAt: {
     type: String,
   }
 });
 const SurveillanceSchema = new mongoose.Schema({
-  Place: {
+  customer: {
     type: String,
     required: true,
   },
@@ -148,16 +179,27 @@ const SurveillanceSchema = new mongoose.Schema({
   },
   备注:{
     type: String,
+    default: null
+  },
+
+  Buffer: {
+    type: Buffer,
+    default: null
+  },
+  hasPic: {
+    type: Boolean,
   },
   updatedAt: {
     type: String,
   }
 });
 
+
+
 const IP = mongoose.models.ipmacs || mongoose.model("Ipmac", IPSchema);
 const Printer = mongoose.models.printer || mongoose.model("Printer", PrinterSchema);
 const Phone = mongoose.models.phone || mongoose.model("Phone", PhoneSchema);
-const DataCenter = mongoose.models.datacenter || mongoose.model("DataCenter", DataCenterSchema);
+const Datacenter = mongoose.models.datacenter || mongoose.model("DataCenter", DatacenterSchema);
 const Surveillance = mongoose.models.surveillance || mongoose.model("Surveillance", SurveillanceSchema);
 
 
@@ -165,6 +207,6 @@ export {
   IP,
   Printer,
   Phone,
-  DataCenter,
+  Datacenter,
   Surveillance
 }

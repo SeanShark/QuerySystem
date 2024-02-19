@@ -48,11 +48,16 @@ const loginAuth = async (req, res, next) => {
   Verify user's cookie, asign User's infomation.
 */
 const verifyUser = async (req, res, next) => {
-  const user = await User.findById(req.id);
-
-  user.userInfo.lastLogin = new Date();
-  await user.save();
-  return res.status(200).json({ user: req.user });
+  try {
+    const user = await User.findById(req.id);
+  
+    user.userInfo.lastLogin = new Date();
+    await user.save();
+    return res.status(200).json({ user: req.user });
+    
+  } catch (error) {
+    console.log('verifyUser', error);
+  }
 }
 
 /* 

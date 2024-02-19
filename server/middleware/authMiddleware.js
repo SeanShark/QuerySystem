@@ -14,17 +14,17 @@ const adminUser = (async (req, res, next) => {
 })
 
 const allowDatabase = (async (req, res, next) => {
-  let database = "databasePermissions." + req.body.type
-
+  const database = "databasePermissions." + req.body.type
   // console.log('allowDatabase',database, req.body);
   
-  const authUser = await User.findOne({
-      $and: [
-        { _id: req.id },
-        {[database]: true}
-      ]
-    });
   try {
+    const authUser = await User.findOne({
+        $and: [
+          { _id: req.id },
+          {[database]: true}
+        ]
+    });
+    // console.log('allowDatabase',database);
     if(!authUser) {
       return res.status(401).json({
         title: "error",
@@ -42,9 +42,8 @@ const allowDatabase = (async (req, res, next) => {
 })
 
 const customerControl = (async (req, res, next) => {
-  const place  = req.body.data.Place;
-  const allowCustomer = 'placeAccess.' + place
-  // console.log('customerControl', req.user.placeAccess.鹅公岭);
+  const customer  = req.body.data.customer;
+  const allowCustomer = 'customerAccess.' + customer;
   // console.log('customerControl', req.body);
   try {
     const authUser = await User.findOne({ 

@@ -8,11 +8,11 @@
     <q-card>
       <q-toolbar
         class="text-white"
-        :class="store.isAdd ? 'bg-light-green' : 'bg-light-blue'"
+        :class="store.isCreate ? 'bg-light-green' : 'bg-light-blue'"
       >
-        <q-icon :name="store.isAdd ? 'add' : 'edit'" />
+        <q-icon :name="store.isCreate ? 'create' : 'update'" />
         <q-toolbar-title>{{
-          store.isAdd ? "增加记录" : "编辑内容"
+          store.isCreate ? "增加记录" : "编辑内容"
         }}</q-toolbar-title>
         <q-btn
           v-close-popup
@@ -20,7 +20,7 @@
           round
           dense
           icon="close"
-          @click.stop="store.isAdd ? $emit('canceladd') : $emit('canceledit')"
+          @click.stop="store.isCreate ? $emit('cancelcreate') : $emit('cancelupdate')"
         />
       </q-toolbar>
       <q-separator />
@@ -32,7 +32,7 @@
         >
           <div class="row">
             <q-input
-              v-model="store.searchData.type"
+              label="电话"
               class="col-6"
               flat
               lazy-rules="ondemand"
@@ -44,7 +44,7 @@
               </template>
             </q-input>
             <q-input
-              v-model="store.searchData.place"
+              v-model="store.searchData.customer"
               class="col-6"
               lazy-rules="ondemand"
               readonly
@@ -56,47 +56,47 @@
           </div>
 
           <q-input
-            v-model.number="store.phoneData.号码"
+            v-model.number="store.Data.Phone.号码"
             filled
             label="号码"
             hint="号码为8位数"
             lazy-rules="ondemand"
             hide-hint
             hide-bottom-space
-            :error="store.phoneFormState.numberError"
+            :error="store.formState.Phone.numberError"
           >
             <template #prepend>
               <q-icon name="phone" />
             </template>
             <template #error>
-              {{ store.phoneFormState.errorMsg }}
+              {{ store.formState.Phone.errorMsg }}
             </template>
           </q-input>
 
           <q-input
-            v-model="store.phoneData.面板号"
+            v-model="store.Data.Phone.面板号"
             filled
             label="面板号"
             hide-bottom-space
             lazy-rules="ondemand"
-            :error="store.phoneFormState.panelError"
+            :error="store.formState.Phone.panelError"
           >
             <template #prepend>
               <q-icon name="g_mobiledata" />
             </template>
             <template #error>
-              {{ store.phoneFormState.errorMsg }}
+              {{ store.formState.Phone.errorMsg }}
             </template>
           </q-input>
 
           <q-input
-            v-model="store.phoneData.楼层线路"
+            v-model="store.Data.Phone.楼层线路"
             filled
             label="楼层线路"
             lazy-rules="ondemand"
             hide-bottom-space
             hide-hint
-            :error="store.phoneFormState.colorError"
+            :error="store.formState.Phone.colorError"
           >
             <template #prepend>
               <q-icon name="cable" />
@@ -104,45 +104,54 @@
           </q-input>
 
           <q-select
-            v-model="store.phoneData.颜色对"
+            v-model="store.Data.Phone.颜色对"
             filled
             label="颜色对"
             hide-bottom-space
             hide-hint
             :options="store.colorPairOptions"
-            :error="store.phoneFormState.colorError"
+            :error="store.formState.Phone.colorError"
           >
             <template #prepend>
               <q-icon name="palette" />
             </template>
             <template #error>
-              {{ store.phoneFormState.errorMsg }}
+              {{ store.formState.Phone.errorMsg }}
             </template>
           </q-select>
 
           <q-input
-            v-model="store.phoneData.办公室"
+            v-model="store.Data.Phone.办公室"
             filled
             label="办公室"
             hide-bottom-space
             lazy-rules="ondemand"
-            :error="store.phoneFormState.officeError"
+            :error="store.formState.Phone.officeError"
           >
             <template #prepend>
               <q-icon name="meeting_room" />
             </template>
             <template #error>
-              {{ store.phoneFormState.errorMsg }}
+              {{ store.formState.Phone.errorMsg }}
             </template>
           </q-input>
+
+          <div>
+            <UploadComponent />
+          </div>
+
+          <div v-if="store.Data[store.searchData.type].hasPic">
+            <ImageComponent />
+          </div>
+
           <div class="row q-gutter-sm justify-end q-mt-lg">
             <q-btn
               color="primary"
-              :icon="store.isAdd ? 'add' : 'edit'"
+              :icon="store.isCreate ? 'create' : 'update'"
               :class="store.isMobile ? 'col-12' : 'col-3'"
-              :label="store.isAdd ? '增 加' : '编 辑'"
-              :loading="store.addBtnLoading"
-              @click="store.isAdd ? $emit('add') : $emit('edit')"
+              :label="store.isCreate ? '增 加' : '编 辑'"
+              :loading="store.btnLoading"
+              @click="store.isCreate ? $emit('create') : $emit('update')"
             />
             <q-btn
               v-close-popup
@@ -151,7 +160,7 @@
               label="取 消"
               :class="store.isMobile ? 'col-12' : 'col-3'"
               @click.stop="
-                store.isAdd ? $emit('canceladd') : $emit('canceledit')
+                store.isCreate ? $emit('cancelcreate') : $emit('cancelupdate')
               "
             />
           </div>
@@ -164,6 +173,8 @@
 <script setup>
 import { useUserStore } from "../stores/store";
 const store = useUserStore();
+import UploadComponent from "./UploadComponent.vue";
+import ImageComponent from "./ImageComponent.vue";
 
 const props = defineProps({
   modelValue: {
@@ -172,5 +183,5 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["canceladd", "canceledit", "add", "edit"]);
+const emit = defineEmits(["cancelcreate", "cancelupdate", "create", "update"]);
 </script>

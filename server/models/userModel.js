@@ -63,28 +63,28 @@ const userSchema = new mongoose.Schema({
     },
   },
   databasePermissions: {
-    ip: {
+    IP: {
       type: Boolean,
       default: true
     },
-    phone: {
+    Phone: {
       type: Boolean,
       default: false
     },
-    printer: {
+    Printer: {
       type: Boolean,
       default: false
     },
-    datacenter: {
+    Datacenter: {
       type: Boolean,
       default: false
     },
-    surveillance: {
+    Surveillance: {
       type: Boolean,
       default: false
     },
   },
-  placeAccess: {
+  customerAccess: {
     '禾花': {
       type: Boolean,
       default: false

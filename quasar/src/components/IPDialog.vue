@@ -8,11 +8,11 @@
     <q-card>
       <q-toolbar
         class="text-white"
-        :class="store.isAdd ? 'bg-light-green' : 'bg-light-blue'"
+        :class="store.isCreate ? 'bg-light-green' : 'bg-light-blue'"
       >
-        <q-icon :name="store.isAdd ? 'add' : 'edit'" />
+        <q-icon :name="store.isCreate ? 'create' : 'update'" />
         <q-toolbar-title>{{
-          store.isAdd ? "增加记录" : "编辑内容"
+          store.isCreate ? "增加记录" : "编辑内容"
         }}</q-toolbar-title>
         <q-btn
           v-close-popup
@@ -20,7 +20,7 @@
           round
           dense
           icon="close"
-          @click.stop="store.isAdd ? $emit('canceladd') : $emit('canceledit')"
+          @click.stop="store.isCreate ? $emit('cancelcreate') : $emit('cancelupdate')"
         />
       </q-toolbar>
       <q-separator />
@@ -32,7 +32,7 @@
         >
           <div class="row">
             <q-input
-              v-model="store.searchData.type"
+              label="终端"
               class="col-6"
               flat
               lazy-rules="ondemand"
@@ -44,7 +44,7 @@
               </template>
             </q-input>
             <q-input
-              v-model="store.searchData.place"
+              v-model="store.searchData.customer"
               class="col-6"
               lazy-rules="ondemand"
               readonly
@@ -56,55 +56,55 @@
           </div>
 
           <q-input
-            v-model="store.IPData.姓名"
+            v-model="store.Data.IP.姓名"
             filled
             label="姓名："
             lazy-rules="ondemand"
             hide-bottom-space
-            :error="store.ipFormState.nameError"
+            :error="store.formState.IP.nameError"
           >
             <template #prepend>
               <q-icon name="person" />
             </template>
             <template #error>
-              {{ store.ipFormState.errorMsg }}
+              {{ store.formState.IP.errorMsg }}
             </template>
           </q-input>
 
           <q-input
-            v-model="store.IPData.IP"
+            v-model="store.Data.IP.IP"
             filled
             hide-bottom-space
             lazy-rules="ondemand"
             label="IP"
-            :error="store.ipFormState.IPError"
+            :error="store.formState.IP.IPError"
           >
             <template #prepend>
               <q-icon name="lan" />
             </template>
             <template #error>
-              {{ store.ipFormState.errorMsg }}
+              {{ store.formState.IP.errorMsg }}
             </template>
           </q-input>
 
           <q-input
-            v-model="store.IPData.MAC"
+            v-model="store.Data.IP.MAC"
             filled
             label="MAC"
             lazy-rules="ondemand"
             hide-bottom-space
-            :error="store.ipFormState.MACError"
+            :error="store.formState.IP.MACError"
           >
             <template #prepend>
               <q-icon name="drive_file_rename_outline" />
             </template>
             <template #error>
-              {{ store.ipFormState.errorMsg }}
+              {{ store.formState.IP.errorMsg }}
             </template>
           </q-input>
 
           <q-input
-            v-model="store.IPData.办公室"
+            v-model="store.Data.IP.办公室"
             filled
             label="办公室："
             hide-bottom-space
@@ -114,7 +114,7 @@
             </template>
           </q-input>
           <q-input
-            v-model="store.IPData.备注"
+            v-model="store.Data.IP.备注"
             filled
             label="备注："
             hide-bottom-space
@@ -124,14 +124,22 @@
             </template>
           </q-input>
 
+          <div>
+            <UploadComponent />
+          </div>
+
+          <div v-if="store.Data[store.searchData.type].hasPic">
+            <ImageComponent />
+          </div>
+
           <div class="row q-gutter-sm justify-end q-mt-lg">
             <q-btn
               color="primary"
-              :icon="store.isAdd ? 'add' : 'edit'"
+              :icon="store.isCreate ? 'create' : 'update'"
               :class="store.isMobile ? 'col-12' : 'col-3'"
-              :label="store.isAdd ? '增 加' : '编 辑'"
-              :loading="store.addBtnLoading"
-              @click="store.isAdd ? $emit('add') : $emit('edit')"
+              :label="store.isCreate ? '增 加' : '编 辑'"
+              :loading="store.btnLoading"
+              @click="store.isCreate ? $emit('create') : $emit('update')"
             />
             <q-btn
               v-close-popup
@@ -140,7 +148,7 @@
               label="取 消"
               :class="store.isMobile ? 'col-12' : 'col-3'"
               @click.stop="
-                store.isAdd ? $emit('canceladd') : $emit('canceledit')
+                store.isCreate ? $emit('cancelcreate') : $emit('cancelupdate')
               "
             />
           </div>
@@ -153,6 +161,8 @@
 <script setup>
 import { useUserStore } from "../stores/store";
 const store = useUserStore();
+import UploadComponent from "./UploadComponent.vue";
+import ImageComponent from "./ImageComponent.vue";
 
 const props = defineProps({
   modelValue: {
@@ -160,7 +170,8 @@ const props = defineProps({
     required: true,
   },
 });
-const emit = defineEmits(["canceladd", "canceledit", "add", "edit"]);
+const emit = defineEmits(["cancelcreate", "cancelupdate", "create", "update"]);
+
 
 
 </script>

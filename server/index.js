@@ -9,6 +9,7 @@ import userRoutes from "./routes/userRoutes.js";
 import todoRoutes from "./routes/todoRoutes.js";
 import queryRoutes from "./routes/queryRoutes.js";
 import loggerRoutes from './routes/loggerRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
 const app = express();
@@ -38,6 +39,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/todo', todoRoutes);
 app.use('/api/query', queryRoutes);
 app.use('/api/logger', loggerRoutes);
+app.use('/api/upload', uploadRoutes);
 
 if (process.env.NODE_ENV === 'prodution') {
   const __dirname = path.resolve();
