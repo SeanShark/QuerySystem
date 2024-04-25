@@ -33,14 +33,14 @@
               bottom-slots
               hide-bottom-space
               lazy-rules="ondemand"
-              :error="searchItems.typeError"
+              :error="searchFieldState.typeError"
               :options="store.types"
             >
               <template #prepend>
                 <q-icon name="title" color="primary" @click.stop.prevent />
               </template>
               <template #error>
-                {{ searchItems.errorMsg }}
+                {{ searchFieldState.errorMsg }}
               </template>
             </q-select>
           </div>
@@ -56,14 +56,14 @@
               bottom-slots
               hide-bottom-space
               lazy-rules="ondemand"
-              :error="searchItems.customerError"
+              :error="searchFieldState.customerError"
               :options="customers"
             >
               <template #prepend>
                 <q-icon name="place" color="accent" @click.stop.prevent />
               </template>
               <template #error>
-                {{ searchItems.errorMsg }}
+                {{ searchFieldState.errorMsg }}
               </template>
             </q-select>
           </div>
@@ -97,14 +97,14 @@
               hide-bottom-space
               label="关键字"
               lazy-rules="ondemand"
-              :error="keywordState.isEmpty"
+              :error="searchFieldState.keywordError"
               @keyup.enter="handleSearch"
             >
               <template #prepend>
                 <q-icon name="key" @click.stop.prevent />
               </template>
               <template #error>
-                {{ keywordState.errorMsg }}
+                {{ searchFieldState.errorMsg }}
               </template>
             </q-input>
           </div>
@@ -191,6 +191,7 @@
           :rows="store.tableRows"
           :columns="columns"
           :filter="searchFilter"
+          :rows-per-page-options="[10, 20, 30, 40, 50, 0]"
           row-key="_id"
           selection="single"
         >
@@ -219,12 +220,12 @@
               </q-td>
               <q-td v-for="col in props.cols.filter((col) => col.name !== 'desc')" :key="col.name" :props="props">
                 <q-btn
-                  v-if="col.name === '图像' && col.value === true"
+                  v-if="col.name === '图像' && col.value.length > 0"
                   round
                   flat
                   color="secondary"
                   icon="image"
-                  @click="showImageDialog(store.searchData.type, props.key)"
+                  @click="openCarouselDialog(col.value)"
                 />
                 <div v-if="col.name !== '图像'">
                   {{ col.value }}
@@ -266,12 +267,12 @@
                     </q-item-section>
                     <q-item-section side>
                       <q-btn
-                        v-if="col.label === '图像' && col.value === true"
+                        v-if="col.label === '图像' && col.value.length > 0"
                         round
                         flat
                         color="secondary"
                         icon="image"
-                        @click="showImageDialog(store.searchData.type, props.key)"
+                        @click="openCarouselDialog(col.value)"
                       />
                       <q-item-label v-if="col.label !== '图像'">{{ col.value }}</q-item-label>
                     </q-item-section>
@@ -295,46 +296,20 @@
       </q-scroll-area>
     </div>
 
+    
+    <QueryDialog 
+      v-model="store.openDialog[store.searchData.type]"
+      @update="onUpdateHandler"
+      @create="onCreateHandler"
+      @cancel="onCancel"
+    />
     <ImageDialog v-model="store.openImageDialog" @close="colseImageDialog" />
-
-    <IPDialog
-      v-model="store.openDialog.IP"
-      @update="onUpdateIP()"
-      @create="onCreateIP"
-      @cancelupdate="onCancelUpdate"
-      @cancelcreate="onCancelCreate"
-    />
-    <PhoneDialog
-      v-model="store.openDialog.Phone"
-      @update="onUpdatePhone()"
-      @create="onCreatePhone"
-      @cancelupdate="onCancelUpdate"
-      @cancelcreate="onCancelCreate"
-    />
-    <PrinterDialog
-      v-model="store.openDialog.Printer"
-      @update="onUpdatePrinter()"
-      @create="onCreatePrinter"
-      @cancelupdate="onCancelUpdate"
-      @cancelcreate="onCancelCreate"
-    />
-    <DataCenterDialog
-      v-model="store.openDialog.Datacenter"
-      @update="onUpdateDatacenter()"
-      @create="onCreateDatacenter"
-      @cancelupdate="onCancelUpdate"
-      @cancelcreate="onCancelCreate"
-    />
-    <SurveillanceDialog
-      v-model="store.openDialog.Surveillance"
-      @update="onUpdateSurveillance()"
-      @create="onCreateSurveillance"
-      @cancelupdate="onCancelUpdate"
-      @cancelcreate="onCancelCreate"
-    />
     <DeleteDialog
       v-model="openDeleteDialog"
       @delete="onDelete(store.searchData.type, store.originalData._id)"
+    />
+    <CaroucelDialog 
+      v-model="store.openCarouselDialog"
     />
     <HelpDialog v-model="openHelpDialog" />
   </q-page>
@@ -343,41 +318,37 @@
 <script setup>
 import { ref, reactive, watch, computed, onMounted, provide } from "vue";
 import { useRouter } from "vue-router";
-import IPDialog from "src/components/IPDialog.vue";
-import HelpDialog from "src/components/HelpDialog.vue";
-import PhoneDialog from "src/components/PhoneDialog.vue";
-import DeleteDialog from "src/components/DeleteDialog.vue";
-import PrinterDialog from "src/components/PrinterDialog.vue";
-import DataCenterDialog from "src/components/DataCenterDialog.vue";
-import SurveillanceDialog from "src/components/SurveillanceDialog.vue";
-import ImageDialog from "src/components/ImageDialog.vue";
 import { exportFile } from "quasar";
 import { useUserStore } from "../stores/store";
+
+import QueryDialog from "src/dialogs/QueryDialog.vue";
+import HelpDialog from "src/dialogs/HelpDialog.vue";
+import DeleteDialog from "src/dialogs/DeleteDialog.vue";
+import ImageDialog from "src/dialogs/ImageDialog.vue";
+import CaroucelDialog from "src/dialogs/CaroucelDialog.vue";
 
 const store = useUserStore();
 const router = useRouter();
 
 onMounted(async () => {
-  store.searchData.type = "-请选择-";
-
-  await store
-    .verifyUser()
+  store.searchData.type = '-请选择-'
+  if (!store.user) {
+    await store.verifyUser()
     .then(() => {
       if (!store.user) {
-        router.push("/index");
+        router.push("/");
       }
     })
     .catch(() => {
       router.push("/index");
-    });
+    })
+  }
 });
 
 const visible = ref(true);
 const showTable = ref(false);
-const scrollAreaHeight = ref(170);
+const scrollAreaHeight = ref(270);
 const uploader = ref();
-provide("uploader", uploader);
-
 const openDeleteDialog = ref(false);
 const openHelpDialog = ref(false);
 const customerRef = ref(null);
@@ -386,29 +357,16 @@ const fieldRef = ref(null);
 const fieldState = ref(true);
 const keywordRef = ref(null);
 const searchLoading = ref(false);
-
 const tableRef = ref(null);
 const btnGroup = ref(true);
 const searchFilter = ref("");
-
 const fabPosition = ref([20, 20]);
 const draggingFab = ref(false);
-
 const downloadable = ref(false);
-
+const columns = ref([]);
 const customers = ["禾花", "鹅公岭", "新南", "白坭坑", "慧明", "创点"];
 
-const keywordState = reactive({
-  isEmpty: false,
-  errorMsg: "",
-});
-const searchItems = reactive({
-  typeError: false,
-  customerError: false,
-  errorMsg: "",
-});
-
-const columns = ref([]);
+provide("uploader", uploader);
 
 const moveFab = (e) => {
   draggingFab.value = e.isFirst !== true && e.isFinal !== true;
@@ -432,8 +390,8 @@ watch(
         field = ["IP", "姓名", "MAC", "办公室", "备注"];
         store.searchData.field = "IP";
       } else if (newValue === "Printer") {
-        field = ["打印机", "硒鼓", "办公室", "数量"];
-        store.searchData.field = "打印机";
+        field = ["打印机型号", "硒鼓型号", "办公室", "数量"];
+        store.searchData.field = "打印机型号";
       } else if (newValue === "Phone") {
         field = ["号码", "面板号", "楼层线路", "办公室", "备注"];
         store.searchData.field = "号码";
@@ -448,6 +406,8 @@ watch(
 
     if (newValue !== oldValue) {
       store.tableRows = [];
+      store.clearData();
+      clearFormState()
     }
   }
 );
@@ -456,17 +416,23 @@ watch(
   () => store.selected,
   (newValue) => {
     if (newValue.length !== 0) {
+      //if row selected in table, make a copy of data to originalData
+      //keep original value until update successful.
+      //for purpose that check the data was changed or not when update submit,
+      //and if canceled, backup the data from originalData
       store.originalData = JSON.parse(JSON.stringify(newValue[0]));
       btnGroup.value = false;
       if (store.originalData.号码) {
         store.originalData.号码 = parseInt(store.originalData.号码);
       }
     } else {
+      //No thing select, clear originalData
       store.originalData = null;
       btnGroup.value = true;
     }
   }
 );
+
 
 const showSticky1 = computed(() => {
   return (
@@ -486,30 +452,37 @@ const colseImageDialog = () => {
   store.showSticky2 = true;
 };
 
+const searchFieldState = reactive({
+  typeError: false,
+  customerError: false,
+  keywordError: false,
+  errorMsg: "",
+});
+
 const handleSearch = async () => {
-  keywordState.isEmpty = false;
-  searchItems.typeError = false;
-  searchItems.customerError = false;
+  searchFieldState.keywordError = false;
+  searchFieldState.typeError = false;
+  searchFieldState.customerError = false;
   downloadable.value = false;
   store.selected = [];
+  store.tableRows = [];
   const keyword = store.searchData.keyword.trim();
-
   // if ((await typeRef.value?.validate()) && (await customerRef.value?.validate()))
   if (store.searchData.type === "-请选择-") {
-    searchItems.typeError = true;
-    searchItems.errorMsg = "请选择类型";
+    searchFieldState.typeError = true;
+    searchFieldState.errorMsg = "请选择类型";
     return;
   }
 
   if (store.searchData.customer === "-请选择-") {
-    searchItems.customerError = true;
-    searchItems.errorMsg = "请选择地点";
+    searchFieldState.customerError = true;
+    searchFieldState.errorMsg = "请选择地点";
     return;
   }
 
   if (!keyword) {
-    keywordState.isEmpty = true;
-    keywordState.errorMsg = "搜索关键字不能为空";
+    searchFieldState.keywordError = true;
+    searchFieldState.errorMsg = "搜索关键字不能为空";
     return;
   }
   if (
@@ -517,14 +490,11 @@ const handleSearch = async () => {
     store.searchData.field !== "姓名" &&
     store.searchData.field !== "数量"
   ) {
-    keywordState.isEmpty = true;
-    keywordState.errorMsg = "关键字太少";
+    searchFieldState.keywordError = true;
+    searchFieldState.errorMsg = "关键字太少";
     return;
   }
-  // console.log(store.searchData.field, store.searchData.keyword);
-  // return
   searchLoading.value = true;
-  let type = "";
   if (store.searchData.type === "-请选择-") {
     return store.failureTip("请选择搜索类型。错误代码：50001");
   }
@@ -550,23 +520,16 @@ const handleSearch = async () => {
       }
     })
     .catch((err) => {
-      if (err.response.data.status === "keywordError") {
-        keywordState.isEmpty = true;
-        keywordState.errorMsg = err.response.data.msg;
-      } else if (err.response.data.status === "typeError") {
-        store.tableRows = [];
-        searchItems.typeError = true;
-        searchItems.errorMsg = err.response.data.msg;
-        // store.failureTip(err.response.data.msg);
-      } else if (err.response.data.status === "customerError") {
-        store.tableRows = [];
-        searchItems.customerError = true;
-        searchItems.errorMsg = err.response.data.msg;
-        // store.failureTip(err.response.data.msg);
+      if (err.response.data) {
+        const field = err.response.data.status;
+        if(searchFieldState.hasOwnProperty(field)) {
+          searchFieldState[field] = true;
+        }
+        searchFieldState.errorMsg = err.response.data.msg;
       } else {
-        store.tableRows = [];
         store.failureTip("网络超时，请重试");
       }
+      store.tableRows = [];
     })
     .finally(async () => {
       scrollAreaHeight.value = (await tableRef.value?.$el.clientHeight) + 10;
@@ -591,34 +554,16 @@ const sortIPv4 = (a, b) => {
 
 const openCreateDialog = () => {
   store.isCreate = true;
+  store.uploadLimit = 5;
   store.showSticky2 = false;
-
-  for (const prop in store.Data[store.searchData.type]) {
-    if (store.Data[store.searchData.type].hasOwnProperty(prop)) {
-      if (
-        prop !== "customer" &&
-        prop !== "颜色" &&
-        prop !== "数量" &&
-        prop !== "类型"
-      ) {
-        store.Data[store.searchData.type][prop] = "";
-      }
-    }
-  }
   store.openDialog[store.searchData.type] = true;
-};
-
-const onCancelCreate = () => {
-  store.showSticky2 = true;
-  store.clearFormState();
-  store.btnLoading = false;
 };
 
 const openUpdateDialog = () => {
   store.isCreate = false;
   store.showSticky2 = false;
-
-  //Make a copy of the data into originalData, and copy data into store.Data.xxx
+  store.clearFormState();
+  //Write data into Data[type]. Before openDialog, originalData is copied(watch method)
   for (const prop in store.originalData) {
     if (store.originalData.hasOwnProperty(prop)) {
       if (prop !== "customer") {
@@ -626,82 +571,21 @@ const openUpdateDialog = () => {
       }
     }
   }
-  store.getImage();
-  for (const prop in store.Data[store.searchData.type]) {
-    if (store.Data[store.searchData.type].hasOwnProperty(prop)) {
-      store.initialUpdateData[prop] = store.Data[store.searchData.type][prop]
-    }
+  if (store.Data[store.searchData.type].picNames.length > 0) {
+    store.uploadLimit = 5 - store.Data[store.searchData.type].picNames.length;
   }
   store.openDialog[store.searchData.type] = true;
 };
 
-const onCancelUpdate = () => {
+const onCancel = () => {
+  if (!store.isCreate) {
+    store.clearData();
+    clearFormState();
+  }
   store.showSticky2 = true;
-  store.clearFormState();
-  store.originalData = JSON.parse(JSON.stringify(store.selected[0]));
-  if (store.originalData.号码) {
-    store.originalData.号码 = parseInt(store.originalData.号码);
-  }
+  store.btnLoading = false;
   store.openDialog[store.searchData.type] = false;
-};
-
-const synchronizeLocalData = async (res) => {
-  if (store.isCreate) {
-    columns.value = tableColumns[store.searchData.type];
-    showTable.value = true;
-    store.selected = [];
-    if (store.searchData.type === "IP") {
-      store.Data.IP.MAC = store.Data.IP.MAC.replace(/./g, (char) =>
-        char.toUpperCase()
-      );
-    }
-    if (store.searchData.type === "Printer") {
-      store.Data.Printer.数量 = store.Data.Printer.数量
-        ? parseInt(store.Data.Printer.数量)
-        : 0;
-    }
-    store.Data[store.searchData.type]._id = res.data._id;
-    store.Data[store.searchData.type].updatedAt = res.data.updatedAt;
-    if (store.hasPic) {
-      store.systemMsg = res.data.msg;
-      await uploader.value.upload();
-    } else {
-      store.showSticky2 = true;
-      store.openDialog[store.searchData.type] = false;
-      store.tableRows.unshift(
-        JSON.parse(JSON.stringify(store.Data[store.searchData.type]))
-      );
-      store.clearData();
-      store.successTip(res.data.msg);
-    }
-  } else {
-    store.Data[store.searchData.type].updatedAt = res.data.updatedAt;
-    const targetIndex = store.tableRows.findIndex(
-      (item) => item._id === store.originalData._id
-    );
-    if (targetIndex !== -1) {
-      for (const prop in store.Data[store.searchData.type]) {
-        if (store.Data[store.searchData.type].hasOwnProperty(prop)) {
-          if (prop !== "customer" && prop !== "_id") {
-            store.tableRows[targetIndex][prop] =
-              store.Data[store.searchData.type][prop];
-            store.originalData[prop] = store.Data[store.searchData.type][prop];
-          }
-        }
-      }
-    } else {
-      store.failureTip("更新本地数据失败，请重新获取数据.");
-    }
-    if (store.hasPic) {
-      store.systemMsg = res.data.msg;
-      await uploader.value.upload();
-    } else {
-      store.openDialog[store.searchData.type] = false;
-      store.showSticky2 = true;
-      store.successTip(res.data.msg);
-    }
-  }
-};
+}
 
 const submitData = computed(() => {
   return {
@@ -710,307 +594,146 @@ const submitData = computed(() => {
   };
 });
 
-const onCreateIP = async () => {
-  if (!store.ipFormValidate()) {
-    return;
-  }
-  store.btnLoading = true;
-  await store.axios
-    .post("/query/newip", submitData.value)
-    .then((res) => {
-      synchronizeLocalData(res);
-    })
-    .catch((err) => {
-      if (err.response.data.status === "ipError") {
-        store.formState.IP.errorMsg = err.response.data.msg;
-        store.formState.IP.IPError = true;
-      } else if (err.response.data.status === "macError") {
-        store.formState.IP.errorMsg = err.response.data.msg;
-        store.formState.IP.MACError = true;
-      } else {
-        store.failureTip("网络超时，请重试");
-      }
-    })
-    .finally(async () => {
-      store.btnLoading = false;
-      scrollAreaHeight.value = (await tableRef.value?.$el.clientHeight) + 10;
-    });
-};
-
-const onCreatePrinter = async () => {
-  if (!store.printerFormValidate()) {
-    return;
-  }
-
-  store.btnLoading = true;
-  store.Data.Printer.硒鼓 = store.Data.Printer.硒鼓.toUpperCase();
-
-  await store.axios
-    .post("/query/newprinter", submitData.value)
-    .then((res) => {
-      synchronizeLocalData(res);
-    })
-    .catch((err) => {
-      if (err.response.data.msg) {
-        store.failureTip(err.response.data.msg);
-      } else {
-        store.failureTip("网络超时，请重试");
-      }
-    })
-    .finally(async () => {
-      store.btnLoading = false;
-      scrollAreaHeight.value = (await tableRef.value?.$el.clientHeight) + 10;
-    });
-};
-
-const onCreatePhone = async () => {
-  if (!store.phoneFormValidate()) {
-    return;
-  }
-  store.Data.Phone.楼层线路 = store.Data.Phone.楼层线路.toUpperCase();
-  store.btnLoading = true;
-  await store.axios
-    .post("/query/newphone", submitData.value)
-    .then((res) => {
-      synchronizeLocalData(res);
-    })
-    .catch((err) => {
-      if (err.response.data.status === "numberError") {
-        store.formState.Phone.errorMsg = err.response.data.msg;
-        store.formState.Phone.numberError = true;
-      } else if (err.response.data.status === "colorError") {
-        store.formState.Phone.errorMsg = err.response.data.msg;
-        store.formState.Phone.colorError = true;
-      } else if (err.response.data.status === "panelError") {
-        store.formState.Phone.errorMsg = err.response.data.msg;
-        store.formState.Phone.panelError = true;
-      } else {
-        store.failureTip("网络超时，请重试");
-      }
-    })
-    .finally(async () => {
-      store.btnLoading = false;
-      scrollAreaHeight.value = (await tableRef.value?.$el.clientHeight) + 10;
-    });
-};
-
-const onCreateDatacenter = async () => {
-  if (!store.datacenterFormValidate()) {
-    return;
-  }
-  store.btnLoading = true;
-  await store.axios
-    .post("/query/newdatacenter", submitData.value)
-    .then((res) => {
-      synchronizeLocalData(res);
-    })
-    .catch((err) => {
-      if (err.response.data.status === "ipError") {
-        store.formState.Datacenter.errorMsg = err.response.data.msg;
-        store.formState.Datacenter.IPError = true;
-      } else {
-        store.failureTip("网络超时，请重试");
-      }
-    })
-    .finally(async () => {
-      store.btnLoading = false;
-      scrollAreaHeight.value = (await tableRef.value?.$el.clientHeight) + 10;
-    });
-};
-
-const onCreateSurveillance = async () => {
-  if (!store.surveillanceFormValidate()) {
-    return;
-  }
-  store.btnLoading = true;
-
-  await store.axios
-    .post("/query/newsurveillance", submitData.value)
-    .then(async (res) => {
-      synchronizeLocalData(res);
-    })
-    .catch((err) => {
-      if (err.response.data.status === "ipError") {
-        store.formState.Surveillance.errorMsg = err.response.data.msg;
-        store.formState.Surveillance.IPError = true;
-      } else {
-        store.failureTip("网络超时，请重试");
-      }
-    })
-    .finally(async () => {
-      store.btnLoading = false;
-      scrollAreaHeight.value = (await tableRef.value?.$el.clientHeight) + 10;
-    });
-};
-
-const onUpdateIP = async () => {
-  if (!store.ipFormValidate()) {
-    return;
-  }
-
-  if (store.dataChanged()) {
-    store.clearFormState();
-    store.btnLoading = true;
-    await store.axios
-      .put("/query/updateip", submitData.value)
-      .then((res) => {
-        synchronizeLocalData(res);
-      })
-      .catch((err) => {
-        if (err.response.data.status === "ipError") {
-          store.formState.IP.errorMsg = err.response.data.msg;
-          store.formState.IP.IPError = true;
-        } else if (err.response.data.status === "macError") {
-          store.formState.IP.errorMsg = err.response.data.msg;
-          store.formState.IP.MACError = true;
-        } else {
-          store.failureTip("网络超时，请重试");
-        }
-      })
-      .finally(() => {
-        store.btnLoading = false;
-      });
-  } else if (store.hasPic) {
-    await uploader.value.upload();
-  } else {
-    onCancelUpdate();
-  }
-};
-
-const onUpdatePrinter = async () => {
-  if (!store.printerFormValidate()) {
-    return;
-  }
-  if (store.dataChanged()) {
-    store.Data.Printer.数量 = store.Data.Printer.数量
-      ? store.Data.Printer.数量
-      : 0;
-    store.btnLoading = true;
-    await store.axios
-      .put("/query/updateprinter", submitData.value)
-      .then((res) => {
-        synchronizeLocalData(res);
-      })
-      .catch((err) => {
-        if (err.response.data.status === "colorError") {
-          store.formState.Printer.errorMsg = err.response.data.msg;
-          store.formState.Printer.colorError = true;
-        } else {
-          store.failureTip("网络超时，请重试");
-        }
-      })
-      .finally(() => {
-        store.btnLoading = false;
-      });
-  } else if (store.hasPic) {
-    await uploader.value.upload();
-  } else {
-    onCancelUpdate();
-  }
-};
-
-const onUpdatePhone = async () => {
-  if (!store.phoneFormValidate()) {
-    return;
-  }
-
-  if (store.dataChanged()) {
-    store.btnLoading = true;
-    store.Data.Phone.楼层线路 = store.Data.Phone.楼层线路.toUpperCase();
-    await store.axios
-      .put("/query/updatephone", submitData.value)
-      .then((res) => {
-        synchronizeLocalData(res);
-      })
-      .catch((err) => {
-        if (err.response.data.status === "numberError") {
-          store.formState.Phone.errorMsg = err.response.data.msg;
-          store.formState.Phone.numberError = true;
-        } else if (err.response.data.status === "colorError") {
-          store.formState.Phone.errorMsg = err.response.data.msg;
-          store.formState.Phone.colorError = true;
-        } else if (err.response.data.status === "panelError") {
-          store.formState.Phone.errorMsg = err.response.data.msg;
-          store.formState.Phone.panelError = true;
-        } else {
-          store.failureTip("网络超时，请重试");
-        }
-      })
-      .finally(() => {
-        store.btnLoading = false;
-      });
-  } else if (store.hasPic) {
-    await uploader.value.upload();
-  } else {
-    onCancelUpdate();
-  }
-};
-
-const onUpdateDatacenter = async () => {
-  if (!store.datacenterFormValidate()) {
-    return;
-  }
-
-  if (store.dataChanged()) {
-    store.clearFormState();
-    store.btnLoading = true;
-    await store.axios
-      .put("/query/updatedatacenter", submitData.value)
-      .then((res) => {
-        synchronizeLocalData(res);
-      })
-      .catch((err) => {
-        if (err.response.data.status === "ipError") {
-          store.formState.Datacenter.errorMsg = err.response.data.msg;
-          store.formState.Datacenter.IPError = true;
-        } else {
-          store.failureTip("网络超时，请重试");
-        }
-      })
-      .finally(() => {
-        store.btnLoading = false;
-      });
-  } else if (store.hasPic) {
-    await uploader.value.upload();
-  } else {
-    onCancelUpdate();
-  }
-};
-
-const onUpdateSurveillance = async () => {
-  if (!store.surveillanceFormValidate()) {
-    return;
-  }
-
-  if (store.dataChanged()) {
-    store.clearFormState();
-    store.btnLoading = true;
-    try {
-      await store.axios
-        .put("/query/updatesurveillance", submitData.value)
-        .then((res) => {
-          synchronizeLocalData(res);
-        })
-        .catch((err) => {
-          if (err.response.data.status === "ipError") {
-            store.formState.Surveillance.errorMsg = err.response.data.msg;
-            store.formState.Surveillance.IPError = true;
-          } else {
-            store.failureTip("网络超时，请重试");
-          }
-        })
-        .finally(() => {
-          store.btnLoading = false;
-        });
-    } catch (error) {
-      console.log(error.message);
+const errorHandler = (err) => {
+  if (err.response.data) {
+    const errorField = err.response.data.status
+    if (store.formState[store.searchData.type].hasOwnProperty(errorField)) {
+      store.formState[store.searchData.type][errorField] = true;
+      store.formState[store.searchData.type].errorMsg = err.response.data.msg;
+    } else {
+      store.failureTip(err.response.data.msg)
     }
+  } else {
+    store.failureTip("网络超时，请重试");
+  }
+}
+
+const onCreateHandler = async () => {
+  if(!formValidate(store.searchData.type)) {
+    return;
+  }
+  if (store.searchData.type === 'Phone') {
+    store.Data.Phone.号码 = parseInt(store.Data.Phone.号码);
+    store.Data.Phone.楼层线路 = store.Data.Phone.楼层线路.toUpperCase();
+  }
+  if (store.searchData.type === 'Printer') {
+    store.Data.Printer.硒鼓型号 = store.Data.Printer.硒鼓型号.toUpperCase();
+    store.Data.Printer.数量 = parseInt(store.Data.Printer.数量);
+  }
+  store.btnLoading = true;
+  store.Data[store.searchData.type].updatedAt = store.dateAndTime()
+  const url = "/query/new" + store.searchData.type.toString().toLowerCase();
+  await store.axios
+    .post(url, submitData.value)
+    .then(async (res) => {
+      columns.value = tableColumns[store.searchData.type];
+      showTable.value = true;
+      store.selected = [];
+      if (store.searchData.type === "IP") {
+        store.Data.IP.MAC = store.Data.IP.MAC.replace(/./g, (char) =>
+          char.toUpperCase()
+        );
+      }
+      if (store.searchData.type === "Printer") {
+        store.Data.Printer.数量 = store.Data.Printer.数量
+          ? store.Data.Printer.数量 : 0;
+      }
+      store.Data[store.searchData.type]._id = res.data._id;
+      if (store.hasPic) {
+        store.systemMsg = res.data.msg;
+        await uploader.value.upload();
+      } else {
+        store.showSticky2 = true;
+        store.openDialog[store.searchData.type] = false;
+        store.tableRows.unshift(
+          JSON.parse(JSON.stringify(store.Data[store.searchData.type]))
+        );
+        store.clearData();
+        store.successTip(res.data.msg);
+      }
+    })
+    .catch((err) => {
+      errorHandler(err)
+    })
+    .finally(async () => {
+      store.btnLoading = false;
+      scrollAreaHeight.value = (await tableRef.value?.$el.clientHeight) + 10;
+    });
+};
+
+const openCarouselDialog = (array) => {
+  store.picNames = array;
+  store.openCarouselDialog = true;
+}
+
+const onUpdateHandler = async () => {
+  if(!formValidate(store.searchData.type)) {
+    return;
+  }
+  if (store.dataChanged()) {
+    if (store.Data[store.searchData.type].数量) {
+      store.Data[store.searchData.type].数量 = store.Data[store.searchData.type].数量
+      ? store.Data[store.searchData.type].数量
+      : 0;
+    }
+    if (store.Data[store.searchData.type].楼层线路) {
+      store.Data.Phone.楼层线路 = store.Data.Phone.楼层线路.toUpperCase();
+    }
+    if (store.Data[store.searchData.type].硒鼓型号) {
+      store.Data.Printer.硒鼓型号 = store.Data.Printer.硒鼓型号.toUpperCase();
+    }
+    clearFormState();
+    store.btnLoading = true;
+    store.Data[store.searchData.type].updatedAt = store.dateAndTime()
+    //before update, all updated data write into Data[type]
+    const url = "/query/update" + store.searchData.type.toString().toLowerCase();
+    await store.axios
+      .put(url, submitData.value)
+      .then(async (res) => {
+        if (store.searchData.type === 'IP') {
+          store.Data.IP.MAC = store.Data.IP.MAC.replace(/./g, (char) =>
+            char.toUpperCase()
+          );
+        }
+        const targetIndex = store.tableRows.findIndex(
+          (item) => item._id === store.originalData._id
+        );
+        //if update success, data in Data[type] is the same with server side
+        //so sychronized the data from Data[type] to originalData and table row.
+        if (targetIndex !== -1) {
+          for (const prop in store.Data[store.searchData.type]) {
+            if (store.Data[store.searchData.type].hasOwnProperty(prop)) {
+              if (prop !== "customer" && prop !== "_id") {
+                store.tableRows[targetIndex][prop] =
+                  store.Data[store.searchData.type][prop];
+                store.originalData[prop] = store.Data[store.searchData.type][prop];
+              }
+            }
+          }
+        } else {
+          store.failureTip("更新本地数据失败，请重新获取数据.");
+        }
+        if (store.hasPic) {
+          store.systemMsg = res.data.msg;
+          await uploader.value.upload();
+        } else {
+          store.openDialog[store.searchData.type] = false;
+          store.showSticky2 = true;
+          store.successTip(res.data.msg);
+        }
+      })
+      .catch((err) => {
+        errorHandler(err)
+      })
+      .finally(() => {
+        store.btnLoading = false;
+      });
   } else if (store.hasPic) {
     await uploader.value.upload();
   } else {
-    onCancelUpdate();
+    onCancel();
   }
-};
+}
 
 const onDelete = async (type, id) => {
   if(!type && !id) {
@@ -1034,6 +757,187 @@ const onDelete = async (type, id) => {
       store.failureTip("网络超时，请重试");
     });
 };
+
+const formValidate = (type) => {
+  clearFormState()
+  if(type === "IP") {
+    if (!store.Data.IP.姓名) {
+      store.formState.IP.nameError = true;
+      store.formState.IP.errorMsg = "使用人不能为空";
+      return false;
+    } else {
+      store.formState.IP.nameError = false;
+    }
+
+    if (!store.isValidIPv4(store.Data.IP.IP)) {
+      store.formState.IP.errorMsg = "请输入合法IPv4地址";
+      store.formState.IP.ipError = true;
+      return false;
+    } else {
+      store.formState.IP.ipError = false;
+    }
+
+    if (store.Data.IP.MAC.length === 0) {
+      store.formState.IP.macError = true;
+      store.formState.IP.errorMsg = "该区域不能为空";
+      return false;
+    } else {
+      store.formState.IP.macError = false;
+    }
+  } 
+  else if (type === "Phone") {
+    const numberString = store.Data.Phone.号码
+    const numberParse = parseInt(store.Data.Phone.号码);
+
+    if (isNaN(numberParse) || numberParse.toString() !== numberString) {
+      store.formState.Phone.errorMsg = "请输入数字";
+      store.formState.Phone.numberError = true;
+      return false;
+    } else {
+      store.formState.Phone.numberError = false;
+    }
+
+    if (numberParse < 10000000 || numberParse > 100000000) {
+      store.formState.Phone.errorMsg = "请输入8位号码";
+      store.formState.Phone.numberError = true;
+      return false;
+    } else {
+      store.formState.Phone.numberError = false;
+    }
+
+    if (store.Data.Phone.面板号.length === 0) {
+      store.formState.Phone.errorMsg = "面板号不能为空";
+      store.formState.Phone.panelError = true;
+      return false;
+    } else {
+      store.formState.Phone.panelError = false;
+    }
+
+    if (!store.Data.Phone.办公室) {
+      store.formState.Phone.errorMsg = "办公室不能为空";
+      store.formState.Phone.officeError = true;
+      return false;
+    } else {
+      store.formState.Phone.officeError = false;
+    }
+  }
+  else if (type === "Printer") {
+    const number = store.Data.Printer.数量;
+    // const number = 42
+
+    if (!store.Data.Printer.品牌) {
+      store.formState.Printer.errorMsg = "请输入品牌";
+      store.formState.Printer.brandError = true;
+      return false;
+    } else {
+      store.formState.Printer.brandError = false;
+    }
+    if (!store.Data.Printer.打印机型号) {
+      store.formState.Printer.errorMsg = "请输入打印机型号";
+      store.formState.Printer.typeError = true;
+      return false;
+    } else {
+      store.formState.Printer.typeError = false;
+    }
+    if (!store.Data.Printer.硒鼓型号) {
+      store.formState.Printer.errorMsg = "请输入硒鼓型号";
+      store.formState.Printer.cartridgeError = true;
+      return false;
+    } else {
+      store.formState.Printer.cartridgeError = false;
+    }
+    if (!store.Data.Printer.颜色) {
+      store.formState.Printer.errorMsg = "请输入颜色";
+      store.formState.Printer.colorError = true;
+      return false;
+    } else {
+      store.formState.Printer.colorError = false;
+    }
+    if (isNaN(number)) {
+      store.formState.Printer.errorMsg = "请输入合法数量";
+      store.formState.Printer.amountError = true;
+      return false;
+    } else {
+      store.formState.Printer.amountError = false;
+    }
+    if (!store.Data.Printer.办公室) {
+      store.formState.Printer.errorMsg = "请输入所在办公室";
+      store.formState.Printer.officeError = true;
+      return false;
+    } else {
+      store.formState.Printer.officeError = false;
+    }
+  }
+  else if (type === "Datacenter") {
+    if (!store.Data.Datacenter.名称) {
+      store.formState.Datacenter.errorMsg = "请输入名称";
+      store.formState.Datacenter.nameError = true;
+      return false;
+    } else {
+      store.formState.Datacenter.nameError = false;
+    }
+    if (!store.isValidIPv4(store.Data.Datacenter.IP)) {
+      store.formState.Datacenter.errorMsg = "请输入合法IPv4地址";
+      store.formState.Datacenter.ipError = true;
+      return false;
+    } else {
+      store.formState.Datacenter.ipError = false;
+    }
+    if (!store.Data.Datacenter.用户名) {
+      store.formState.Datacenter.errorMsg = "请输入用户名";
+      store.formState.Datacenter.userError = true;
+      return false;
+    } else {
+      store.formState.Datacenter.userError = false;
+    }
+  } 
+  else if (type === "Surveillance") {
+    if (!store.Data.Surveillance.类型) {
+      store.formState.Surveillance.errorMsg = "请输入名称";
+      store.formState.Surveillance.typeError = true;
+      return false;
+    } else {
+      store.formState.Surveillance.typeError = false;
+    }
+    if (!store.isValidIPv4(store.Data.Surveillance.IP)) {
+      store.formState.Surveillance.errorMsg = "请输入合法IPv4地址";
+      store.formState.Surveillance.ipError = true;
+      return false;
+    } else {
+      store.formState.Surveillance.ipError = false;
+    }
+    if (!store.Data.Surveillance.用户名) {
+      store.formState.Surveillance.errorMsg = "请输入用户名";
+      store.formState.Surveillance.userError = true;
+      return false;
+    } else {
+      store.formState.Surveillance.userError = false;
+    }
+    if (!store.Data.Surveillance.密码) {
+      store.formState.Surveillance.errorMsg = "请输入用户名";
+      store.formState.Surveillance.pwdError = true;
+      return false;
+    } else {
+      store.formState.Surveillance.pwdError = false;
+    }
+  } 
+  else {
+    store.failureTip('类型错误')
+  }
+  clearFormState();
+  return true;
+}
+
+const clearFormState = () => {
+  const dataType = store.searchData.type;
+  for (const prop in store.formState[dataType]) {
+    if (store.formState[dataType].hasOwnProperty(prop)) {
+      if (prop !== "errorMsg") {
+        store.formState[dataType][prop] = false;
+      }
+    }
+  }
+}
 
 const tableColumns = {
   IP: [
@@ -1073,7 +977,7 @@ const tableColumns = {
       name: "图像",
       align: "left",
       label: "图像",
-      field: (row) => row.hasPic,
+      field: (row) => row.picNames,
       sortable: false,
     },
     {
@@ -1106,7 +1010,7 @@ const tableColumns = {
       require: true,
       label: "打印机",
       align: "left",
-      field: (row) => row.打印机,
+      field: (row) => row.打印机型号,
       sortable: false,
     },
     {
@@ -1114,7 +1018,7 @@ const tableColumns = {
       require: true,
       align: "left",
       label: "硒鼓",
-      field: (row) => row.硒鼓,
+      field: (row) => row.硒鼓型号,
       sortable: false,
     },
     {
@@ -1143,7 +1047,7 @@ const tableColumns = {
       name: "图像",
       align: "left",
       label: "图像",
-      field: (row) => row.hasPic,
+      field: (row) => row.picNames,
       sortable: false,
     },
     {
@@ -1195,7 +1099,7 @@ const tableColumns = {
       name: "图像",
       align: "left",
       label: "图像",
-      field: (row) => row.hasPic,
+      field: (row) => row.picNames,
       sortable: false,
     },
     {
@@ -1243,7 +1147,7 @@ const tableColumns = {
       name: "图像",
       align: "left",
       label: "图像",
-      field: (row) => row.hasPic,
+      field: (row) => row.picNames,
       sortable: false,
     },
     {
@@ -1298,7 +1202,7 @@ const tableColumns = {
       name: "图像",
       align: "left",
       label: "图像",
-      field: (row) => row.hasPic,
+      field: (row) => row.picNames,
       sortable: false,
     },
     {

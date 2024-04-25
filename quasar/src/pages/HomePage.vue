@@ -82,7 +82,6 @@
                 :item="list"
                 :index="index"
                 clickable
-                
               >
                 <q-item-section avatar>
                   <q-checkbox
@@ -154,7 +153,12 @@
               v-if="!doingLists.length"
               class="no-tasks absolute-center"
             >
-              <q-icon name="check" size="50px" color="primary" />
+              <q-icon 
+                name="check" 
+                size="50px" 
+                color="primary" 
+                @click="getTodolists"
+              />
               <div class="text-h5 text-primary text-center">无任务</div>
             </div>
           </q-tab-panel>
@@ -237,15 +241,18 @@
               v-if="!doneLists.length"
               class="no-tasks absolute-center"
             >
-              <q-icon name="check" size="50px" color="primary" />
+              <q-icon 
+                name="check" 
+                size="50px" 
+                color="primary" 
+                @click="getTodolists"
+              />
               <div class="text-h5 text-primary text-center">无任务</div>
             </div>
           </q-tab-panel>
         </q-tab-panels>
       </q-card>
     </div>
-
-
   </q-page>
 </template>
 
@@ -253,7 +260,6 @@
 import { onMounted, ref, reactive } from "vue";
 import { useUserStore } from "../stores/store";
 import { useRouter } from "vue-router";
-import { date } from "quasar";
 
 
 const router = useRouter();
@@ -263,15 +269,19 @@ const inputRef = ref(null);
 const sendBtnOff = ref(false);
 
 onMounted(async () => {
-  // console.log($q.cookies.get('replyauthjwt'));
-  await store.verifyUser()
-    .then(() => {
-      if(store.user) {
-        getTodolists();
+  if(store.user) {
+    await getTodolists();
+  } else {
+    await store.verifyUser()
+    .then(async () => {
+      if (store.user) {
+        await getTodolists();
       }
-    }).catch(() => {
-      router.push("/index");
     })
+    .catch(() => {
+      router.push('/index');
+    })
+  }
 });
 
 const todolists = ref([]);
@@ -283,6 +293,7 @@ const getTodolists = async () => {
     owner: store.user.userInfo.email
   })
   .then((res) => {
+    // console.log(res.data);
     todolists.value = res.data;
     doingLists.value = todolists.value.filter(lists => {
       return lists.isDone === false;
@@ -308,7 +319,7 @@ const createTodo = async () => {
   if (await inputRef.value?.validate()) {
     sendBtnOff.value = true;
     todoData.owner = store.user.userInfo.email;
-    todoData.createdAt = date.formatDate(Date.now(), "YYYY-MM-DD-HH:mm:ss");
+    todoData.createdAt = store.dateAndTime();
     await store.axios.post("/todo/newtodo/", todoData)
     .then((res) => {
       todoData.todo = "";
@@ -384,7 +395,7 @@ const confirmDel = (id) => {
 };
 
 const updateTodo = async (id, filed, value) => {
-  const createdAt = date.formatDate(Date.now(), "YYYY-MM-DD-HH:mm:ss");
+  const createdAt = store.dateAndTime();
   await store.axios.put("/todo", {
     id: id,
     field: filed,

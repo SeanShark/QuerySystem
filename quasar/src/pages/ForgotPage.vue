@@ -54,8 +54,9 @@
                 <div
                   class="q-pt-sm rounded-borders"
                   @click="getcapcha"
-                  v-html="captcha.Url"
-                ></div>
+                >
+                  <img :src="captcha.Url" alt="Captcha Image">
+                </div>
               </template>
               <template #error>
                 {{ captcha.errorMsg }}
@@ -368,7 +369,8 @@ onMounted(async () => {
 const getcapcha = () => {
   captcha.state = true;
   store.axios.get(`/user/captcha?${Math.random()}`).then((res) => {
-    captcha.Url = res.data.data;
+    // captcha.Url = res.data.data;
+    captcha.Url = `data:image/svg+xml;base64,${btoa(res.data.data)}`;
     captcha.text = res.headers["captcha"].toLowerCase();
   });
 };

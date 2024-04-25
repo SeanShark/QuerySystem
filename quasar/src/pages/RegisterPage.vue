@@ -56,8 +56,9 @@
                 <div
                   class="q-pt-sm rounded-borders"
                   @click="getcapcha"
-                  v-html="captcha.Url"
-                ></div>
+                >
+                  <img :src="captcha.Url" alt="Captcha Image">
+                </div>
               </template>
               <template #error>
                 {{ captcha.errorMsg }}
@@ -349,20 +350,20 @@ const captcha = reactive({
 });
 
 onMounted(async () => {
-  await store
-    .verifyUser()
-    .then(() => {
-      router.push("/");
-    })
-    .catch((err) => {
-      getcapcha();
-    });
+  if (store.user) {
+    router.push("/");
+  } else {
+    getcapcha();
+    
+    
+  }
 });
 
 const getcapcha = () => {
   captcha.state = true;
   store.axios.get(`/user/captcha?${Math.random()}`).then((res) => {
-    captcha.Url = res.data.data;
+    // captcha.Url = res.data.data;
+    captcha.Url = `data:image/svg+xml;base64,${btoa(res.data.data)}`;
     captcha.text = res.headers["captcha"].toLowerCase();
   });
 };

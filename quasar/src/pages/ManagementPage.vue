@@ -187,44 +187,44 @@
           <q-card>
             <q-card-section>
               <q-toggle
-                v-model="user.databasePermissions.ip"
+                v-model="user.databasePermissions.IP"
                 color="green"
                 label="终端"
                 left-label
                 :disable="clickable"
-                @click="updateUser(user._id, 'databasePermissions.ip', user.databasePermissions.ip)"
+                @click="updateUser(user._id, 'databasePermissions.IP', user.databasePermissions.IP)"
               />
               <q-toggle
-                v-model="user.databasePermissions.phone"
+                v-model="user.databasePermissions.Phone"
                 color="green"
                 label="电话"
                 left-label
                 :disable="clickable"
-                @click="updateUser(user._id, 'databasePermissions.phone', user.databasePermissions.phone)"
+                @click="updateUser(user._id, 'databasePermissions.Phone', user.databasePermissions.Phone)"
               />
               <q-toggle
-                v-model="user.databasePermissions.printer"
+                v-model="user.databasePermissions.Printer"
                 color="green"
                 label="耗材"
                 left-label
                 :disable="clickable"
-                @click="updateUser(user._id, 'databasePermissions.printer', user.databasePermissions.printer)"
+                @click="updateUser(user._id, 'databasePermissions.Printer', user.databasePermissions.Printer)"
               />
               <q-toggle
-                v-model="user.databasePermissions.datacenter"
+                v-model="user.databasePermissions.Datacenter"
                 color="green"
                 label="机房"
                 left-label
                 :disable="clickable"
-                @click="updateUser(user._id, 'databasePermissions.datacenter', user.databasePermissions.datacenter)"
+                @click="updateUser(user._id, 'databasePermissions.Datacenter', user.databasePermissions.Datacenter)"
               />
               <q-toggle
-                v-model="user.databasePermissions.surveillance"
+                v-model="user.databasePermissions.Surveillance"
                 color="green"
                 label="监控"
                 left-label
                 :disable="clickable"
-                @click="updateUser(user._id, 'databasePermissions.surveillance', user.databasePermissions.surveillance)"
+                @click="updateUser(user._id, 'databasePermissions.Surveillance', user.databasePermissions.Surveillance)"
               />
             </q-card-section>
           </q-card>
@@ -416,22 +416,25 @@ const confirmDeleteUser = async (id) => {
 
 onMounted(async () => {
   await store.verifyUser()
-    .then(() => {
-      if (store.user) {
-        // console.log(store.user.userInfo.email);
-        store.axios
-          .post("/user/alluser")
-          .then((res) => {
-            originalUsers.value = res.data;
-          })
-          .catch((err) => {
-            console.log(err.response.data.msg);
-          });
-      }
-    })
-    .catch(() => {
-      router.push("/index");
-    })
+  .then(async () => {
+    if (store.user) {
+      await store.axios
+      .post("/user/alluser")
+      .then((res) => {
+        originalUsers.value = res.data;
+      })
+      .catch((err) => {
+        if(err.response.data) {
+          store.failureTip(err.response.data.msg)
+        } else {
+          store.failureTip('获取数据超时')
+        }
+      });
+    }
+  })
+  .catch(() => {
+    router.push("/index");
+  })
 });
 
 

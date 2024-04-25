@@ -15,7 +15,12 @@
             style="width: 100%; max-width: 550px"
           >
             <div class="row justify-end">
-              <q-btn label="设置" flat @click="settingDialog = true"> </q-btn>
+              <q-btn label="设置" flat @click="settingDialog = true"/> 
+              <q-btn icon="refresh" color="green" flat @click="getLoggerList"> 
+                <q-tooltip>
+                  刷新
+                </q-tooltip>
+              </q-btn>
             </div>
           </q-date>
         </div>
@@ -98,8 +103,18 @@
                 v-model="list.logger"
                 :dense="$q.screen.lt.md"
                 :readonly="readonlyEditor"
+                :definitions="{
+                  editable: {
+                    tip: '开启编辑',
+                    icon: 'edit',
+                    lable: 'edit',
+                    color: 'red',
+                    handler: editable
+                  }
+                }"
                 :toolbar="[
                   ['fullscreen'],
+                  
                   [
                     {
                       label: '功能',
@@ -150,7 +165,7 @@
                     'removeFormat',
                   ],
                   ['viewsource'],
-                  ['update'],
+                  ['editable'],
                 ]"
                 :fonts="{
                   arial: 'Arial',
@@ -164,21 +179,8 @@
                 }"
                 @input="onEditorInput(index)"
               >
-                <template #edit>
-                  <q-btn
-                    icon="edit"
-                    color="primary"
-                    size="sm"
-                    flat
-                    padding="none"
-                    @click="readonlyEditor = !readonlyEditor"
-                  >
-                    <div v-if="!readonlyEditor">.....</div>
-                    <q-tooltip>
-                      点击开始编辑
-                    </q-tooltip>
-                  </q-btn>
-                </template>
+                <!-- <template #edit> -->
+                
               </q-editor>
             </form>
           </q-tab-panel>
@@ -373,6 +375,10 @@ const getLoggerList = async () => {
     });
 };
 
+const editable = () => {
+  readonlyEditor.value = !readonlyEditor.value
+}
+
 const onEditorInput = (index) => {
   const currentLoggerContent = loggerLists.value[index].logger;
   const initialContent = initialLoggerContent.value[index];
@@ -397,33 +403,34 @@ const newLogger = async () => {
     loggerData.date = selectedDate.value;
     loggerData.user = store.user.userInfo.email;
     sendBtnOff.value = true;
-    await store.axios
-      .post("/logger/newlogger", loggerData)
-      .then((res) => {
-        if (res.data.id) {
-          loggerData._id = res.data.id;
-        }
-        if (res.data.logger) {
-          loggerData.logger =
-            res.data.logger + "<ul><li>" + loggerData.logger + "</li></ul>";
-        } else {
-          loggerData.logger = "<ul><li>" + loggerData.logger + "</li></ul>";
-        }
-        loggerLists.value.unshift(JSON.parse(JSON.stringify(loggerData)));
-        initialLoggerContent.value = loggerLists.value.map(
-          (list) => list.logger
-        );
-        events.value = loggerLists.value.map((item) => item.date);
-        store.successTip(res.data.msg);
-        isLogged.value = true;
-      })
-      .catch((err) => {
-        store.failureTip(err.response.data.msg);
-      })
-      .finally(() => {
-        loggerData.logger = "";
-        sendBtnOff.value = false;
-      });
+    try {
+      const res = await store.axios.post("/logger/newlogger", loggerData);
+      
+      loggerData._id = res.data.id;
+      if (res.data.logger) {
+        loggerData.logger =
+          res.data.logger + "<ul><li>" + loggerData.logger + "</li></ul>";
+      } else {
+        loggerData.logger = "<ul><li>" + loggerData.logger + "</li></ul>";
+      }
+      loggerLists.value.unshift(JSON.parse(JSON.stringify(loggerData)));
+      initialLoggerContent.value = loggerLists.value.map(
+        (list) => list.logger
+      );
+      events.value = loggerLists.value.map((item) => item.date);
+      store.successTip(res.data.msg);
+      isLogged.value = true;
+      sendBtnOff.value = false;
+      loggerData.logger = "";
+        
+    } catch (error) {
+      if (axios.isAxiosError(err) && err.code === 'ECONNABORTED') {
+        // console.log('forceUpdateImg2', err);
+        this.failureTip('网络不佳，请重试')
+      } else {
+        store.failureTip('服务器回应错误');
+      }
+    }
   }
 };
 
@@ -478,11 +485,7 @@ const confirmDel = (id, index) => {
     })
     .onOk(async () => {
       await store.axios
-        .delete("/logger/deletelogger", {
-          params: {
-            id: id,
-          },
-        })
+        .delete("/logger/deletelogger", { params: { id: id }, })
         .then((res) => {
           loggerLists.value.splice(index, 1);
           initialLoggerContent.value = loggerLists.value.map(
@@ -494,28 +497,41 @@ const confirmDel = (id, index) => {
           isLogged.value = false;
         })
         .catch((err) => {
-          store.failureTip(err.response.data.msg);
+          if (err.response.data.msg) {
+            store.failureTip(err.response.data.msg);
+          } else {
+            store.failureTip('网络错误，获取日志失败')
+          }
         });
     })
     .onCancel(() => {});
 };
 
 onMounted(async () => {
-  await store
-    .verifyUser()
-    .then(() => {
-      if(store.user) {
+  await store.verifyUser()
+  .then(async () => {
+    if (store.user) {
+      await store.axios
+      .post("/user/alluser")
+      .then(async (res) => {
         monthRange.value = store.user.loggerSetting.monthRange;
         themeColor.value = store.user.loggerSetting.themeColor;
         eventColor.value = store.user.loggerSetting.eventColor;
-        getLoggerList();
-      }
-    })
-    .catch(() => {
-      router.push("/index");
-    });
-  
-  isLogged.value = true;
+        await getLoggerList();
+        isLogged.value = true;
+      })
+      .catch((err) => {
+        if(err.response.data) {
+          store.failureTip(err.response.data.msg)
+        } else {
+          store.failureTip('获取数据超时')
+        }
+      });
+    }
+  })
+  .catch(() => {
+    router.push("/index");
+  })
 });
 </script>
 

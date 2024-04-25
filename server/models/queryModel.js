@@ -26,13 +26,9 @@ const IPSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  hasPic: {
-    type: Boolean,
-    default: false,
-  },
-  Buffer: {
-    type: Buffer,
-    default: null
+  picNames: {
+    type: Array,
+    default: null,
   },
   updatedAt: {
     type: String,
@@ -48,7 +44,7 @@ const PrinterSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  硒鼓: {
+  硒鼓型号: {
     type: String,
     required: true,
     uppercase: true,
@@ -63,7 +59,7 @@ const PrinterSchema = new mongoose.Schema({
     min: 0,
     default: 0
   },
-  打印机: {
+  打印机型号: {
     type: String,
     uppercase: true,
     required: true,
@@ -72,13 +68,9 @@ const PrinterSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  hasPic: {
-    type: Boolean,
-    default: false,
-  },
-  Buffer: {
-    type: Buffer,
-    default: null
+  picNames: {
+    type: Array,
+    default: null,
   },
   updatedAt: {
     type: String,
@@ -108,13 +100,9 @@ const PhoneSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  hasPic: {
-    type: Boolean,
-    default: false,
-  },
-  Buffer: {
-    type: Buffer,
-    default: null
+  picNames: {
+    type: Array,
+    default: null,
   },
   updatedAt: {
     type: String,
@@ -144,13 +132,9 @@ const DatacenterSchema = new mongoose.Schema({
   备注:{
     type: String,
   },
-  hasPic: {
-    type: Boolean,
-    default: false,
-  },
-  Buffer: {
-    type: Buffer,
-    default: null
+  picNames: {
+    type: Array,
+    default: null,
   },
   updatedAt: {
     type: String,
@@ -181,13 +165,9 @@ const SurveillanceSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-
-  Buffer: {
-    type: Buffer,
-    default: null
-  },
-  hasPic: {
-    type: Boolean,
+  picNames: {
+    type: Array,
+    default: null,
   },
   updatedAt: {
     type: String,

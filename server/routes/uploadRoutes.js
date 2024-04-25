@@ -1,9 +1,11 @@
 import express from 'express';
 const router = express.Router();
-import { uploadImage, getImage, deleteImg } from '../controllers/uploadController.js';
+import { uploadImageMongodb, uploadtest, getImageMongodb, uploadHardDisk, deleteImgHardDisk } from '../controllers/uploadController.js';
+import { protect } from '../middleware/cookieAuthMiddleware.js';
 
-router.route('/imgs').post(uploadImage).get(getImage);
+router.route('/imgs').post(protect, uploadImageMongodb).get(protect, getImageMongodb);
+router.put('/deleteimg', protect, deleteImgHardDisk);
 
-router.put('/deleteimg', deleteImg);
+router.post('/imgsarray', protect, uploadHardDisk);
 
 export default router;

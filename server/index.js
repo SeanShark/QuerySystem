@@ -25,8 +25,8 @@ The origin field:
 const corsOptions = {
   exposedHeaders: "Captcha",
   credentials: true,
-  origin: 'http://localhost:9000',
-  // origin: 'http://60890559e8ec.sn.mynetname.net:3000',
+  // origin: 'http://localhost:9000',
+  origin: 'http://60890559e8ec.sn.mynetname.net:3000',
 };
 
 //Middle ware

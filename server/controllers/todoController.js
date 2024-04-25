@@ -51,7 +51,7 @@ const newTodo = async (req, res) => {
     // Handle errors
     return res.status(500).json({
       status: "error",
-      msg: "内部错误，请重试."
+      msg: error.message,
     });
   }
 }
@@ -67,16 +67,13 @@ const deleteTodo = async (req, res) => {
   } catch (err) {
     res.status(500).json({
       status: "error",
-      msg: "错误，请重试."
+      msg: err.message,
     });
   }
 }
 
 const updateTodo = async (req, res) => {
-  const id = req.body.id;
-  const field = req.body.field;
-  const value = req.body.value;
-  const createdAt = req.body.createdAt;
+  const { id, field, value, createdAt } = req.body;
 
   const filter = { _id: id }
   try {

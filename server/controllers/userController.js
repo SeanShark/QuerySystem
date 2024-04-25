@@ -7,7 +7,7 @@ import mailTransporter from "../components/email.js";
 */
 const loginAuth = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, remember } = req.body;
     const user = await User.findOne({ 'userInfo.email': email });
     if (!user) {
       return res.status(401).json({
@@ -30,7 +30,7 @@ const loginAuth = async (req, res, next) => {
     }
     // console.log(user._id.toString());
     const idToString = user._id.toString()
-    generateToken(res, idToString);
+    generateToken(res, idToString, remember);
     res.status(200).json({
       status: "success",
       msg: "验证成功"

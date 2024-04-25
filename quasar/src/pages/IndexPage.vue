@@ -130,14 +130,13 @@ const router = useRouter();
 const isPwd = ref(true);
 const isLoading = ref(false);
 
-
-
 onMounted(async () => {
-  await store
-    .verifyUser()
-    .then(() => {
+  await store.verifyUser()
+  .then(() => {
+    if (store.user) {
       router.push("/");
-    })
+    }
+  })
 });
 
 const loginInfo = reactive({
@@ -168,10 +167,6 @@ const loginSubmit = async () => {
     return;
   }
   isLoading.value = true;
-  /*
-  await store.axios
-    .post("/user/login", loginInfo, { withCredentials: true })
-  */
   await store.axios
     .post("/user/login", loginInfo)
     .then(async (res) => {

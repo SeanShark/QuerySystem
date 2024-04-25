@@ -1,12 +1,14 @@
 import * as Database from "../models/queryModel.js";
+import fs from 'node:fs/promises';
+import path from 'path';
+import os from 'os';
 
 const getQueryRusults = async (req, res, next) => {
 
   const { customer, field } = req.body.data;
   const type = req.body.type
 
-  let keyword = req.body.data.keyword;
-  // console.log('getQueryRusults',keyword, customer );
+  let keyword = req.body.data.keyword.toString();
 
   const forbiddenKeyword = ["1.2", "2.1", "1.1", "0.0"];
 
@@ -25,7 +27,6 @@ const getQueryRusults = async (req, res, next) => {
   }
 
   const DB = Database[type];
-
   try {
     let results = new Object();
 
@@ -36,10 +37,10 @@ const getQueryRusults = async (req, res, next) => {
       keyword = keyword.replace(letter, "");
       results = await DB.find({
         $and: [{ customer: customer }, { [field]: { $not: new RegExp(keyword, "i") }}]
-      }).select('-Buffer').sort({ updatedAt: "descending" });
+      }).sort({ updatedAt: "descending" });
     }
     else if (keyword === "全部" || keyword === "所有" || keyword.toUpperCase() === "ALL" ) {
-      results = await DB.find({ customer: customer }).select('-Buffer')
+      results = await DB.find({ customer: customer })
         .sort({ updatedAt: "descending" });
     } 
     else if (keyword.toUpperCase() === "NULL" || keyword === "空的") {
@@ -48,7 +49,7 @@ const getQueryRusults = async (req, res, next) => {
           { customer: customer },
           { [field]: null },
         ],
-      }).select('-Buffer').sort({ updatedAt: "descending" });
+      }).sort({ updatedAt: "descending" });
     } 
     else if ( field === '数量' ) {
       results = await DB.find({
@@ -56,7 +57,7 @@ const getQueryRusults = async (req, res, next) => {
           { customer: customer },
           { [field]: parseInt(keyword) },
         ],
-      }).select('-Buffer').sort({ updatedAt: "descending" });
+      }).sort({ updatedAt: "descending" });
     } 
     else {
       results = await DB.find({
@@ -64,11 +65,10 @@ const getQueryRusults = async (req, res, next) => {
           { customer: customer },
           { [field]: { $regex: new RegExp(keyword, "i") } },
         ],
-      }).select('-Buffer').sort({ updatedAt: "descending" });
+      }).sort({ updatedAt: "descending" });
     }
 
     res.status(201).send(results);
-    // console.log('getQueryRusults',results);
 
   }
   catch (err) {
@@ -81,15 +81,15 @@ const getQueryRusults = async (req, res, next) => {
 
 //IP
 const newIp = async (req, res) => {
-  const customer = req.body.data.customer;
+  const { customer, 姓名, 办公室, 备注, updatedAt } = req.body.data;
   
   const MAC = req.body.data.MAC.toUpperCase();
   const ip = req.body.data.IP;
   let existsIP = await Database.IP.exists({
-    $and: [{ customer: customer }, { IP: ip }],
+    $and: [{ customer }, { IP: ip }],
   });
   let existsMAC = await Database.IP.exists({
-    $and: [{ customer: customer }, { MAC: MAC }],
+    $and: [{ customer }, { MAC }],
   });
 
   if (existsIP) {
@@ -103,15 +103,14 @@ const newIp = async (req, res) => {
       msg: "MAC地址已存在",
     });
   } else {
-    const date = new Date().toLocaleString("zh-cn");
     const newRecord = new Database.IP({
       customer: customer,
       IP: ip,
       MAC: MAC,
-      姓名: req.body.data.姓名,
-      办公室: req.body.data.办公室,
-      备注: req.body.data.备注,
-      updatedAt: date,
+      姓名,
+      办公室,
+      备注,
+      updatedAt
     });
 
     await newRecord
@@ -120,12 +119,10 @@ const newIp = async (req, res) => {
         res.status(201).json({
           status: "success",
           msg: "已成功增加记录",
-          _id: e._id.toString(),
-          updatedAt: date,
+          _id: e._id.toString()
         });
       })
       .catch((e) => {
-        // console.log(e.message);
         res.status(401).json({
           status: "error",
           msg: e.message,
@@ -139,6 +136,7 @@ const updateIp = async (req, res) => {
   const ip = req.body.data.IP;
   const mac = req.body.data.MAC.toUpperCase();
   const id = req.body.data._id;
+  const updatedAt = req.body.data.updatedAt;
 
   let existsIP = await Database.IP.exists({
     $and: [{ IP: ip }, { customer: customer }, { _id: { $ne: id } }],
@@ -159,14 +157,13 @@ const updateIp = async (req, res) => {
     });
     return;
   } else {
-    const date = new Date().toLocaleString("zh-cn");
     const updateRecord = {
       IP: ip,
       MAC: mac,
       姓名: req.body.data.姓名,
       办公室: req.body.data.办公室,
       备注: req.body.data.备注,
-      updatedAt: date,
+      updatedAt,
     };
     Database.IP.findOneAndUpdate({ _id: id }, updateRecord)
       .then((e) => {
@@ -174,7 +171,6 @@ const updateIp = async (req, res) => {
           res.status(201).json({
             status: "success",
             msg: "记录已更新",
-            updatedAt: date,
           });
         } else {
           return res.status(401).json({
@@ -194,20 +190,17 @@ const updateIp = async (req, res) => {
 
 //Printer
 const newPrinter = async (req, res) => {
-  const customer = req.body.data.customer;
-  const brand = req.body.data.品牌;
-  const printer = req.body.data.打印机;
-  const cartridge = req.body.data.硒鼓.toUpperCase();
-  const color = req.body.data.颜色;
-  const amount = req.body.data.数量 ? parseInt(req.body.data.数量) : 0;
-  const office = req.body.data.办公室;
+  const {customer, 品牌, 打印机型号, 颜色, 办公室, updatedAt } = req.body.data;
+
+  const 数量 = req.body.data.数量 ? parseInt(req.body.data.数量) : 0;
+  const 硒鼓型号 = req.body.data.硒鼓型号.toUpperCase();
 
   if (
-    !brand ||
-    !printer ||
-    !cartridge ||
-    !color ||
-    !office
+    !品牌 ||
+    !打印机型号 ||
+    !硒鼓型号 ||
+    !颜色 ||
+    !办公室
   ) {
     return res.status(401).json({
       status: "error",
@@ -215,14 +208,12 @@ const newPrinter = async (req, res) => {
     });
   }
 
-  const date = new Date().toLocaleString("zh-cn");
-
   let existsColor = await Database.Printer.exists({
     $and: [
-      { customer: customer },
-      { 品牌: brand },
-      { 硒鼓: cartridge },
-      { 颜色: color },
+      { customer },
+      { 品牌 },
+      { 硒鼓型号 },
+      { 颜色 },
     ],
   });
 
@@ -233,14 +224,14 @@ const newPrinter = async (req, res) => {
     });
   }
   const newRecord = new Database.Printer({
-    customer: customer,
-    品牌: brand,
-    打印机: printer,
-    硒鼓: cartridge,
-    颜色: color,
-    数量: amount,
-    办公室: office,
-    updatedAt: date,
+    customer,
+    品牌,
+    打印机型号,
+    硒鼓型号,
+    颜色,
+    数量,
+    办公室,
+    updatedAt,
   });
 
   await newRecord
@@ -250,7 +241,6 @@ const newPrinter = async (req, res) => {
         status: "success",
         msg: "已成功增加记录",
         _id: e._id.toString(),
-        updatedAt: date,
       });
     })
     .catch((e) => {
@@ -265,12 +255,13 @@ const updatePrinter = async (req, res) => {
   const customer = req.body.data.customer;
   const id = req.body.data._id;
   const brand = req.body.data.品牌;
-  const printer = req.body.data.打印机;
-  const cartridge = req.body.data.硒鼓.toUpperCase();
+  const printer = req.body.data.打印机型号;
+  const cartridge = req.body.data.硒鼓型号.toUpperCase();
   const color = req.body.data.颜色;
   const amount = req.body.data.数量 ? parseInt(req.body.data.数量) : 0;
-  // console.log(typeof amount); //number
   const office = req.body.data.办公室;
+  const updatedAt = req.body.data.updatedAt;
+
   if (
     !brand ||
     !printer ||
@@ -288,7 +279,7 @@ const updatePrinter = async (req, res) => {
   let existsColor = await Database.Printer.exists({
     $and: [
       { customer: customer },
-      { 硒鼓: cartridge },
+      { 硒鼓型号: cartridge },
       { 颜色: color },
       { _id: { $ne: id } },
     ],
@@ -303,12 +294,12 @@ const updatePrinter = async (req, res) => {
 
   const updatePrinter = {
     品牌: brand,
-    打印机: printer,
-    硒鼓: cartridge,
+    打印机型号: printer,
+    硒鼓型号: cartridge,
     颜色: color,
     数量: amount,
     办公室: office,
-    updatedAt: date,
+    updatedAt,
   };
   Database.Printer.findOneAndUpdate({ _id: req.body.data._id }, updatePrinter)
     .then((e) => {
@@ -316,7 +307,6 @@ const updatePrinter = async (req, res) => {
         res.status(201).json({
           status: "success",
           msg: "记录已更新",
-          updatedAt: date,
         });
       } else {
         return res.status(401).json({
@@ -335,18 +325,14 @@ const updatePrinter = async (req, res) => {
 
 //Phone
 const newPhone = async (req, res) => {
-  const customer = req.body.data.customer;
-  const cable = req.body.data.楼层线路.toUpperCase();
-  const number = req.body.data.号码;
-  const panel = req.body.data.面板号;
-  const color = req.body.data.颜色对;
-  const office = req.body.data.办公室;
+  const { customer, 号码, 面板号, 颜色对, 办公室, updatedAt } = req.body.data;
+  const 楼层线路 = req.body.data.楼层线路.toUpperCase();
 
   if (
     !customer ||
-    !number ||
-    !req.body.data.面板号 ||
-    !req.body.data.办公室
+    !号码 ||
+    !面板号 ||
+    !办公室
   ) {
     res.status(401).json({
       status: "error",
@@ -356,7 +342,7 @@ const newPhone = async (req, res) => {
   }
 
 
-  if (number < 10000000 || number > 100000000) {
+  if (号码 < 10000000 || 号码 > 100000000) {
     res.status(401).json({
       status: "numberError",
       msg: "请输入有效号码.",
@@ -364,15 +350,15 @@ const newPhone = async (req, res) => {
     return;
   }
   let existsNumber = await Database.Phone.exists({
-    $and: [{ customer: customer }, { 号码: number }],
+    $and: [{ customer }, { 号码 }],
   });
 
   let existsPanel = await Database.Phone.exists({
-    $and: [{ customer: customer }, { 面板号: panel }],
+    $and: [{ customer }, { 面板号 }],
   });
 
   let existsColor = await Database.Phone.exists({
-    $and: [{ customer: customer }, { 楼层线路: cable }, { 颜色对: color }],
+    $and: [{ customer }, { 楼层线路 }, { 颜色对 }],
   });
 
   if (existsNumber) {
@@ -394,15 +380,14 @@ const newPhone = async (req, res) => {
     });
     return;
   } else {
-    const date = new Date().toLocaleString("zh-cn");
     const newRecord = new Database.Phone({
-      customer: customer,
-      号码: number,
-      面板号: panel,
-      楼层线路: cable,
-      颜色对: color,
-      办公室: office,
-      updatedAt: date,
+      customer,
+      号码,
+      面板号,
+      楼层线路,
+      颜色对,
+      办公室,
+      updatedAt,
     });
 
     await newRecord
@@ -412,7 +397,6 @@ const newPhone = async (req, res) => {
           status: "success",
           msg: "已成功增加记录",
           _id: e._id.toString(),
-          updatedAt: date,
         });
       })
       .catch((e) => {
@@ -432,6 +416,8 @@ const updatePhone = async (req, res) => {
   const id = req.body.data._id;
   const panel = req.body.data.面板号;
   const office = req.body.data.办公室;
+  const updatedAt = req.body.data.updatedAt;
+
 
   if (
     !customer ||
@@ -492,14 +478,13 @@ const updatePhone = async (req, res) => {
     });
     return;
   } else {
-    const date = new Date().toLocaleString("zh-cn");
     const updatePhone = {
       号码: req.body.data.号码,
       面板号: req.body.data.面板号,
       楼层线路: req.body.data.楼层线路,
       颜色对: req.body.data.颜色对,
       办公室: req.body.data.办公室,
-      updatedAt: date,
+      updatedAt,
     };
     Database.Phone.findOneAndUpdate({ _id: req.body.data._id }, updatePhone)
       .then((e) => {
@@ -507,7 +492,6 @@ const updatePhone = async (req, res) => {
           res.status(201).json({
             status: "success",
             msg: "记录已更新",
-            updatedAt: date,
           });
         } else {
           return res.status(401).json({
@@ -539,7 +523,6 @@ const newDatacenter = async (req, res) => {
       msg: "IP地址已存在",
     });
   } else {
-    const date = new Date().toLocaleString("zh-cn");
     const newRecord = new Database.Datacenter({
       customer: customer,
       IP: ip,
@@ -547,7 +530,7 @@ const newDatacenter = async (req, res) => {
       用户名: req.body.data.用户名,
       密码: req.body.data.密码,
       备注: req.body.data.备注,
-      updatedAt: date,
+      updatedAt: req.body.data.updatedAt,
     });
 
     await newRecord
@@ -557,11 +540,9 @@ const newDatacenter = async (req, res) => {
           status: "success",
           msg: "已成功增加记录",
           _id: e._id.toString(),
-          updatedAt: date,
         });
       })
       .catch((e) => {
-        // console.log(e.message);
         res.status(401).json({
           status: "error",
           msg: e.message,
@@ -572,7 +553,9 @@ const newDatacenter = async (req, res) => {
 
 const updateDatacenter = async (req, res) => {
   const customer = req.body.data.customer;
-  let ip = req.body.data.IP;
+  const ip = req.body.data.IP;
+  const updatedAt = req.body.data.updatedAt;
+
   let existsIP = await Database.Datacenter.exists({
     $and: [
       { customer: customer },
@@ -587,14 +570,13 @@ const updateDatacenter = async (req, res) => {
     });
   } 
 
-  const date = new Date().toLocaleString("zh-cn");
   const updateDatacenter = {
     名称: req.body.data.名称,
     IP: ip,
     用户名: req.body.data.用户名,
     密码: req.body.data.密码,
     备注: req.body.data.备注,
-    updatedAt: date,
+    updatedAt,
   };
   Database.Datacenter.findOneAndUpdate({ _id: req.body.data._id }, updateDatacenter)
     .then((e) => {
@@ -602,7 +584,6 @@ const updateDatacenter = async (req, res) => {
         res.status(201).json({
           status: "success",
           msg: "记录已更新",
-          updatedAt: date,
         });
       } else {
         return res.status(401).json({
@@ -622,9 +603,10 @@ const updateDatacenter = async (req, res) => {
 
 //Surveillance
 const newSurveillance = async (req, res) => {
-  let customer = req.body.data.customer;
-  let ip = req.body.data.IP;
-  let existsIP = await Database.Surveillance.exists({
+  const customer = req.body.data.customer;
+  const ip = req.body.data.IP;
+  const updatedAt = req.body.data.updatedAt;
+  const existsIP = await Database.Surveillance.exists({
     $and: [{ customer: customer }, { IP: ip }],
   });
 
@@ -634,7 +616,6 @@ const newSurveillance = async (req, res) => {
       msg: "IP地址已存在",
     });
   }
-  const date = new Date().toLocaleString("zh-cn");
   const newRecord = new Database.Surveillance({
     customer: customer,
     类型: req.body.data.类型,
@@ -642,7 +623,7 @@ const newSurveillance = async (req, res) => {
     用户名: req.body.data.用户名,
     密码: req.body.data.密码,
     备注: req.body.data.备注,
-    updatedAt: date,
+    updatedAt,
   });
 
   await newRecord
@@ -652,11 +633,9 @@ const newSurveillance = async (req, res) => {
         status: "success",
         msg: "已成功增加记录",
         _id: e._id.toString(),
-        updatedAt: date,
       });
     })
     .catch((e) => {
-      // console.log(e.message);
       res.status(401).json({
         status: "error",
         msg: e.message,
@@ -665,8 +644,10 @@ const newSurveillance = async (req, res) => {
 }
 
 const updateSurveillance = async (req, res) => {
-  let ip = req.body.data.IP;
-  let existsIP = await Database.Surveillance.exists({
+  const ip = req.body.data.IP;
+  const updatedAt = req.body.data.updatedAt;
+
+  const existsIP = await Database.Surveillance.exists({
     $and: [
       { customer: req.body.data.customer },
       { IP: ip },
@@ -679,14 +660,13 @@ const updateSurveillance = async (req, res) => {
       msg: "与现有IP地址冲突",
     });
   } else {
-    const date = new Date().toLocaleString("zh-cn");
     const updateSurveillance = {
       类型: req.body.data.类型,
       IP: ip,
       用户名: req.body.data.用户名,
       密码: req.body.data.密码,
       备注: req.body.data.备注,
-      updatedAt: date,
+      updatedAt,
     };
     Database.Surveillance.findOneAndUpdate({ _id: req.body.data._id }, updateSurveillance)
       .then((e) => {
@@ -694,7 +674,6 @@ const updateSurveillance = async (req, res) => {
           res.status(201).json({
             status: "success",
             msg: "记录已更新",
-            updatedAt: date,
           });
         } else {
           return res.status(401).json({
@@ -712,32 +691,36 @@ const updateSurveillance = async (req, res) => {
   }
 }
 
+const __dirname = path.resolve();
+
 //Delete
 const deleteRecord = async (req, res) => {
   const { type, id } = req.query;
-  /*
-  let DB = new Object();
-
-  if (type === "机房") {
-    DB = Database.Datacenter;
-  } else if (type === "终端") {
-    DB = Database.IP;
-  } else if (type === "耗材") {
-    DB = Database.Printer;
-  } else if (type === "电话") {
-    DB = Database.Phone;
-  } else if (type === "监控") {
-    DB = Database.Surveillance;
-  } else {
-    res.status(401).json({
-      status: "error",
-      msg: "错误搜索类型",
-    });
-    return;
-  }
-  */
+  const quasarPath = './quasar/public/queryuploads/';
 
   try {
+    const item = await Database[type].findById(id);
+
+    if(item.picNames.length > 0) {
+      item.picNames.forEach(async (element) => {
+        await fs.unlink(path.resolve(__dirname, 'server', 'public','queryuploads', element), (err) => {
+          if (err) {
+            console.log('uploadHardDisk: No such File.');
+          };
+        });
+      });
+      if(os.cpus()[0].model === '12th Gen Intel(R) Core(TM) i7-12700F') {
+        item.picNames.forEach(async (element) => {
+          await fs.unlink(`${quasarPath}${element}`, (err) => {
+            if (err) {
+              console.log('deleteImgHardDisk: No such File.');
+            } 
+          });
+        })
+  
+      }
+    }
+
     await Database[type].deleteOne({ _id: id });
     res.status(201).json({
       status: "success",

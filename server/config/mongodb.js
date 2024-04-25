@@ -3,12 +3,10 @@ import os from 'os';
 import dotenv from 'dotenv';
 dotenv.config();
 
-let dbURL = null;
+let dbURL = process.env.mongoDBLocal;
 
 if(os.cpus()[0].model === '12th Gen Intel(R) Core(TM) i7-12700F') {
   dbURL = process.env.mongoDBRemote;
-} else {
-  dbURL = process.env.mongoDBLocal;
 }
 
 const connectDB = async () => {
