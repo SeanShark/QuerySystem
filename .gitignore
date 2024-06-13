@@ -1,6 +1,10 @@
 #svn
 .svn/
 
+#docker
+.dockerignore
+Dockerfile
+
 # Logs
 logs
 *.log

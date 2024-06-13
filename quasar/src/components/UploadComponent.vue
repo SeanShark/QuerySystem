@@ -33,11 +33,6 @@ const store = useUserStore();
 
 const uploader = inject('uploader');
 
-const getUrl = () => {
-  // return store.axios.defaults.baseURL + '/upload/imgs';
-  return store.axios.defaults.baseURL + '/upload/imgsarray';
-}
-
 const getImageData = (file) => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -66,23 +61,45 @@ const getImageData = (file) => {
   });
 };
 
-//Compress image
-const compressFile = async (file) => {
-  const compressedFile = await compressAccurately(file, {
+const compressAndCheckImage = async (file) => {
+  let compressedFile = await compressAccurately(file, {
     size: 1000,
     accuracy: 0.9,
     type: "image/*",
     scale: 0.5,
   });
-  const compressedImageData = await getImageData(compressedFile); 
-  if (await isImageBlack(compressedImageData)) {
-    // Handle the case where the compressed image is black
-    store.failureTip('图片压缩失败，请刷新页面并重新上传');
-    // Optionally, you can trigger a re-compression or take corrective action.
+
+  let compressedImageData = await getImageData(compressedFile);
+  let retries = 3; // Set the number of retries
+
+  while (await isImageBlack(compressedImageData) && retries > 0) {
+    // Retry compression
+    // console.log("Retrying compression...");
+    compressedFile = await compressAccurately(file, {
+      size: 1000,
+      accuracy: 0.9,
+      type: "image/*",
+      scale: 0.5,
+    });
+    compressedImageData = await getImageData(compressedFile);
+    retries--;
   }
 
-  store.$q.loading.hide();
+  if (await isImageBlack(compressedImageData)) {
+    // Compression failed after retries
+    store.failureTip('图片压缩失败，请刷新页面并重新上传');
+    return null; // Return null or handle failure as needed
+  }
+
   return new File([compressedFile], file.name, { type: compressedFile.type });
+};
+
+
+const compressFile = async (file) => {
+  // store.$q.loading.show();
+  const result = await compressAndCheckImage(file);
+  store.$q.loading.hide();
+  return result;
 };
 
 //Verify if the image turns black

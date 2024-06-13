@@ -25,8 +25,6 @@ export const useUserStore = defineStore("datastore", {
     btnLoading: false,
     uploadLimit: 5,
     hasPic: false,
-    imageId: null,
-    imageUrl: null,
     compress: false,
     isCreate: false,
     carouselSlide: 0,
@@ -226,59 +224,6 @@ export const useUserStore = defineStore("datastore", {
       }
        return false;
     },
-    async forceUpdateImg(t, i) {
-      let type, id;
-      //update mode nerver send params
-      if (t && i){
-        type = t;
-        id = i;
-      }
-      // console.log(type, this.Data[this.searchData.type]);
-      if (!type || !id) {
-        return this.failureTip('获取图片参数错误');
-      }
-      await this.axios.get("/upload/imgs", {
-          params: {
-            type: type,
-            id: id,
-          },
-        })
-        .then((res) => {
-          try {
-            this.imageId = res.data.id;
-            this.imageUrl = null;
-            const bufferData = res.data.buffer.data;
-            const blob = new Blob([new Uint8Array(bufferData)], {
-              type: "image/png",
-            });
-
-            // Create a data URL using FileReader
-            const fileReader = new FileReader();
-            fileReader.onload = () => {
-              const base64Image = fileReader.result;
-              this.imageUrl = base64Image;
-            };
-            fileReader.readAsDataURL(blob);
-          } catch (error) {
-            console.log('forceUpdateImg1', error);
-            // this.failureTip()
-          }
-        })
-        .catch((err) => {
-          if (axios.isAxiosError(err) && err.code === 'ECONNABORTED') {
-            // console.log('forceUpdateImg2', err);
-            this.failureTip('网络不佳，获取图像超时，请重试')
-          } else {
-            console.log('forceUpdateImg', err);
-          }
-          this.imageUrl = null;
-          this.imageId = null;
-        })
-        .finally(() => {
-          this.$q.loading.hide();
-        });
-    },
-    
     async deleteImg (picname) {
       this.$q.loading.show({
         message: '删除图片中，请稍等...'

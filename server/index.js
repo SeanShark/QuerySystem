@@ -16,9 +16,9 @@ const app = express();
 connectDB();
 
 /*
-The origin filed need to match: 'quasar/src/boot/axios.js': 
+The origin filed need to match with: 'quasar/src/boot/axios.js': 
 axios.defaults.baseURL = 'http://yourDomainName:3000/api';
-The origin field: 
+The 'origin' field: 
 ::IP address is OK.
 ::The port is required.
 */
