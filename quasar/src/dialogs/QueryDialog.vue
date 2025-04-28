@@ -60,8 +60,26 @@
             :key="index"
           >
             <q-input
-              v-if="name !=='颜色' && name !== '颜色对' && name !== '类型' && name !== '数量'"
+              v-if="name !=='颜色' && name !== '颜色对' && name !== '类型' && name !== '数量' && name !== '序号' && name !== '号码'"
               v-model="store.Data[store.searchData.type][name]"
+              filled
+              hide-bottom-space
+              lazy-rules="ondemand"
+              :label="name"
+              :error="store.formState[store.searchData.type][mapErrorType[name]]"
+            >
+              <template #prepend>
+                <q-icon :name="mapIcon[name]" />
+              </template>
+              <template #error>
+                {{ store.formState[store.searchData.type].errorMsg }}
+              </template>
+            </q-input>
+
+            <q-input
+              v-else-if="name === '序号' || name === '号码'"
+              v-model.number="store.Data[store.searchData.type][name]"
+              type="number"
               filled
               hide-bottom-space
               lazy-rules="ondemand"
@@ -129,7 +147,6 @@
               color="green"
               label="发送原图"
               left-label
-              keep-color
             />
           </div>
 
@@ -191,6 +208,7 @@ const mapIcon = {
   姓名: "person",
   办公室: "meeting_room",
   备注: "comment",
+  序号: "format_list_numbered",
   号码: "phone",
   面板号: "g_mobiledata",
   楼层线路: "cable",
@@ -217,7 +235,7 @@ const mapTypeLable = {
 const fieldName = {
   IP: ['姓名','IP','MAC','办公室','备注'],
   Printer: ['品牌','打印机型号','硒鼓型号','颜色','数量','办公室'],
-  Phone: ['号码','面板号','楼层线路','颜色对','办公室'],
+  Phone: ['序号','号码','面板号','楼层线路','颜色对','办公室'],
   Datacenter: ['名称','IP','用户名','密码','备注',],
   Surveillance: ['类型','IP','用户名','密码','备注']
 }
@@ -226,6 +244,7 @@ const mapErrorType = {
   姓名: 'nameError',
   IP: 'ipError',
   MAC: 'macError',
+  序号: 'xuhaoError',
   号码: 'numberError',
   面板号: 'panelError',
   楼层线路: 'colorError',

@@ -10,6 +10,7 @@ import todoRoutes from "./routes/todoRoutes.js";
 import queryRoutes from "./routes/queryRoutes.js";
 import loggerRoutes from './routes/loggerRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import customerRoutes from './routes/customerRoutes.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
 const app = express();
@@ -25,8 +26,8 @@ The 'origin' field:
 const corsOptions = {
   exposedHeaders: "Captcha",
   credentials: true,
-  // origin: 'http://localhost:9000',
-  origin: 'http://60890559e8ec.sn.mynetname.net:3000',
+  origin: 'http://localhost:9000',
+  // origin: 'http://119.144.159.220:3000',
 };
 
 //Middle ware
@@ -40,6 +41,7 @@ app.use('/api/todo', todoRoutes);
 app.use('/api/query', queryRoutes);
 app.use('/api/logger', loggerRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/customer', customerRoutes);
 
 if (process.env.NODE_ENV === 'prodution') {
   const __dirname = path.resolve();

@@ -49,7 +49,7 @@
             <q-select
               ref="customerRef"
               v-model="store.searchData.customer"
-              label="地点"
+              label="客户"
               transition-show="jump-up"
               transition-hide="jump-up"
               outlined
@@ -57,7 +57,7 @@
               hide-bottom-space
               lazy-rules="ondemand"
               :error="searchFieldState.customerError"
-              :options="customers"
+              :options="store.customersAvailable"
             >
               <template #prepend>
                 <q-icon name="place" color="accent" @click.stop.prevent />
@@ -124,7 +124,7 @@
 
     <div class="q-pa-xs">
       <q-page-sticky
-        v-if="showSticky1 && store.showSticky2"
+        v-if="showSticky1 && store.showSticky2 && store.searchData.type !== 'EmptyIP'"
         position="bottom-right"
         :offset="fabPosition"
         class="z-top"
@@ -154,6 +154,14 @@
             @click="openCreateDialog"
           />
           <q-fab-action
+            label="复制"
+            :color="btnGroup ? 'grey' : 'indigo'"
+            icon="content_copy"
+            :disable="btnGroup"
+            :hide-label="store.isMobile"
+            @click="openCopyDialog"
+          />
+          <q-fab-action
             label="编辑"
             :color="btnGroup ? 'grey' : 'primary'"
             icon="edit"
@@ -161,6 +169,7 @@
             :hide-label="store.isMobile"
             @click="openUpdateDialog"
           />
+
           <q-fab-action
             label="删除"
             :color="btnGroup ? 'grey' : 'red'"
@@ -297,7 +306,7 @@
     </div>
 
     
-    <QueryDialog 
+    <QueryDialog
       v-model="store.openDialog[store.searchData.type]"
       @update="onUpdateHandler"
       @create="onCreateHandler"
@@ -320,7 +329,6 @@ import { ref, reactive, watch, computed, onMounted, provide } from "vue";
 import { useRouter } from "vue-router";
 import { exportFile } from "quasar";
 import { useUserStore } from "../stores/store";
-
 import QueryDialog from "src/dialogs/QueryDialog.vue";
 import HelpDialog from "src/dialogs/HelpDialog.vue";
 import DeleteDialog from "src/dialogs/DeleteDialog.vue";
@@ -331,17 +339,24 @@ const store = useUserStore();
 const router = useRouter();
 
 onMounted(async () => {
-  store.searchData.type = '-请选择-'
-  if (!store.user) {
-    await store.verifyUser()
-    .then(() => {
+  store.searchData.type = '-请选择-';
+  await store.getAllUserInfo();
+  if (store.user) {
+    try {
+      await store.getCustomers();
+    } catch (err) {
+      console.log('customerlists', err);
+    }
+  } else {
+    try {
+      await store.verifyUser();
+      await store.getCustomers();
       if (!store.user) {
         router.push("/");
       }
-    })
-    .catch(() => {
+    } catch {
       router.push("/index");
-    })
+    }
   }
 });
 
@@ -364,7 +379,6 @@ const fabPosition = ref([20, 20]);
 const draggingFab = ref(false);
 const downloadable = ref(false);
 const columns = ref([]);
-const customers = ["禾花", "鹅公岭", "新南", "白坭坑", "慧明", "创点"];
 
 provide("uploader", uploader);
 
@@ -401,16 +415,53 @@ watch(
       } else if (newValue === "Surveillance") {
         field = ["IP", "类型", "备注"];
         store.searchData.field = "IP";
+      } 
+      else {
+        store.searchData.customer = "-请选择-";
+        store.searchData.field = "-请选择-";
       }
     }
-
     if (newValue !== oldValue) {
       store.tableRows = [];
       store.clearData();
       clearFormState()
     }
   }
+
+  
 );
+
+watch(
+  () => [store.searchData.type, store.searchData.customer], ([newValue1,newValue2], [oldValue1,oldValue2]) => {
+    if (newValue1 === 'EmptyIP') {
+      if (newValue2 === '禾花') {
+        field = ["10.60.69.0"]
+        store.searchData.field = "10.60.69.0";
+      } else if (newValue2 === '新南') {
+        field = ["10.60.67.0"]
+        store.searchData.field = "10.60.67.0";
+      } else if (newValue2 === '白坭坑') {
+        field = ["10.60.64.0"]
+        store.searchData.field = "10.60.64.0";
+      } else if (newValue2 === '鹅公岭') {
+        field = ["10.60.65.0"]
+        store.searchData.field = "10.60.65.0";
+      } else if (newValue2 === '慧明') {
+        field = ["192.168.1.0"]
+        store.searchData.field = "192.168.1.0";
+      } else if (newValue2 === '创点') {
+        field = ["192.168.0.0", "192.168.20.0"]
+        store.searchData.field = "192.168.20.0";
+      } else if (newValue2 === '良安田') {
+        field = ["10.60.67.0"]
+        store.searchData.field = "10.60.72.0";
+      } else {
+        field = ["IP"],
+        store.searchData.field = "IP";
+      }
+    }
+  }
+)
 
 watch(
   () => store.selected,
@@ -440,13 +491,6 @@ const showSticky1 = computed(() => {
     store.searchData.customer !== "-请选择-"
   );
 });
-
-const showImageDialog = (t, i) => {
-  // console.log('showImageDialog',t, i);
-  store.showSticky2 = false;
-  store.forceUpdateImg(t, i);
-  store.openImageDialog = true;
-};
 
 const colseImageDialog = () => {
   store.showSticky2 = true;
@@ -480,7 +524,8 @@ const handleSearch = async () => {
     return;
   }
 
-  if (!keyword) {
+  if (!keyword && store.searchData.type !== "EmptyIP") {
+    console.log('空IP');
     searchFieldState.keywordError = true;
     searchFieldState.errorMsg = "搜索关键字不能为空";
     return;
@@ -494,17 +539,50 @@ const handleSearch = async () => {
     searchFieldState.errorMsg = "关键字太少";
     return;
   }
-  searchLoading.value = true;
   if (store.searchData.type === "-请选择-") {
     return store.failureTip("请选择搜索类型。错误代码：50001");
   }
+  if (store.searchData.type === "EmptyIP" && store.searchData.field === 'IP') {
+    return store.failureTip("空IP类型中，字段不能为IP");
+  }
+  searchLoading.value = true;
   columns.value = tableColumns[store.searchData.type];
+  // console.log('columns.value',tableColumns[store.searchData.type]);
 
   const queryData = {
     customer: store.searchData.customer,
     field: store.searchData.field,
     keyword: keyword,
   };
+  /*
+  try {
+    const res = await store.axios.post("/query", {
+      data: queryData,
+      type: store.searchData.type,
+    });
+    store.tableRows = res.data;
+    showTable.value = true;
+    if (store.tableRows.length !== 0) {
+      downloadable.value = true;
+    }
+  } catch (err) {
+    if (err.response.data) {
+        // console.log(err.response.data.status);
+        const field = err.response.data.status;
+        if(searchFieldState.hasOwnProperty(field)) {
+          searchFieldState[field] = true;
+        }
+        // searchFieldState.errorMsg = err.response.data.msg;
+        store.failureTip(err.response.data.msg);
+      } else {
+        store.failureTip("网络超时，请重试");
+      }
+      store.tableRows = [];
+  } finally {  
+    scrollAreaHeight.value = (await tableRef.value?.$el.clientHeight) + 10;
+    searchLoading.value = false;
+  } */
+  
   await store.axios
     .post("/query", {
       data: queryData,
@@ -512,20 +590,20 @@ const handleSearch = async () => {
     })
     .then((res) => {
       if (res.status === 201) {
-        showTable.value = true;
         store.tableRows = res.data;
-        if (store.tableRows.length !== 0) {
-          downloadable.value = true;
-        }
+        showTable.value = true;
+        downloadable.value = store.tableRows.length !== 0;
       }
     })
     .catch((err) => {
-      if (err.response.data) {
+      if (err.response?.data) {
+        // console.log(err.response.data.status);
         const field = err.response.data.status;
         if(searchFieldState.hasOwnProperty(field)) {
           searchFieldState[field] = true;
         }
-        searchFieldState.errorMsg = err.response.data.msg;
+        // searchFieldState.errorMsg = err.response.data.msg;
+        store.failureTip(err.response.data.msg);
       } else {
         store.failureTip("网络超时，请重试");
       }
@@ -556,6 +634,20 @@ const openCreateDialog = () => {
   store.isCreate = true;
   store.uploadLimit = 5;
   store.showSticky2 = false;
+  store.openDialog[store.searchData.type] = true;
+};
+
+const openCopyDialog = () => {
+  store.isCreate = true;
+  store.uploadLimit = 5;
+  store.showSticky2 = false;
+  for (const prop in store.originalData) {
+    if (store.originalData.hasOwnProperty(prop)) {
+      if (prop !== "customer" && prop !== "_id" && prop !== "picNames") {
+        store.Data[store.searchData.type][prop] = store.originalData[prop];
+      }
+    }
+  }
   store.openDialog[store.searchData.type] = true;
 };
 
@@ -786,10 +878,23 @@ const formValidate = (type) => {
     }
   } 
   else if (type === "Phone") {
-    const numberString = store.Data.Phone.号码
-    const numberParse = parseInt(store.Data.Phone.号码);
+    
+    const xuHao = store.Data.Phone.序号;
+    const xuHaoParse = parseInt(store.Data.Phone.序号);
+    if (isNaN(xuHao) || xuHao !== xuHaoParse) {
+      store.formState.Phone.errorMsg = "请输入数字";
+      store.formState.Phone.xuhaoError = true;
+      return false;
+    } else {
+      store.formState.Phone.numberError = false;
+    }
 
-    if (isNaN(numberParse) || numberParse.toString() !== numberString) {
+    const originNumber = store.Data.Phone.号码
+    const numberParse = parseInt(store.Data.Phone.号码);
+    // const numberParseToString = originNumber.toString();
+    // console.log(typeof(originString),numberParse, numberParseToString,'test');
+
+    if (isNaN(originNumber) || originNumber !== numberParse) {
       store.formState.Phone.errorMsg = "请输入数字";
       store.formState.Phone.numberError = true;
       return false;
@@ -1060,6 +1165,14 @@ const tableColumns = {
   ],
   Phone: [
     {
+      name: "序号",
+      require: true,
+      label: "序号",
+      align: "left",
+      field: (row) => row.序号,
+      sortable: false,
+    },
+    {
       name: "号码",
       require: true,
       label: "号码",
@@ -1218,6 +1331,17 @@ const tableColumns = {
       label: "更新于",
       field: "updatedAt",
       sortable: false,
+    },
+  ],
+  EmptyIP: [
+    {
+      name: "IP",
+      require: true,
+      align: "left",
+      label: "IP",
+      field: "IP",
+      // sortable: true,
+      // sort: (a, b) => sortIPv4(a, b),
     },
   ],
 };

@@ -272,7 +272,16 @@ onMounted(async () => {
   if(store.user) {
     await getTodolists();
   } else {
-    await store.verifyUser()
+    try {
+      await store.verifyUser()
+      if (store.user) {
+        await getTodolists();
+      }
+    } catch {
+      router.push('/index');
+    }
+
+    /*
     .then(async () => {
       if (store.user) {
         await getTodolists();
@@ -281,6 +290,7 @@ onMounted(async () => {
     .catch(() => {
       router.push('/index');
     })
+    */
   }
 });
 
@@ -289,11 +299,10 @@ const doingLists = ref([]);
 const doneLists = ref([]);
 
 const getTodolists = async () => {
-  await store.axios.post("/todo/gettodolists", {
-    owner: store.user.userInfo.email
-  })
-  .then((res) => {
-    // console.log(res.data);
+  try {
+    const res = await store.axios.post("/todo/gettodolists", {
+      owner: store.user.userInfo.email
+    });
     todolists.value = res.data;
     doingLists.value = todolists.value.filter(lists => {
       return lists.isDone === false;
@@ -301,10 +310,9 @@ const getTodolists = async () => {
     doneLists.value = todolists.value.filter(lists => {
       return lists.isDone === true;
     })
-  })
-  .catch((err) => {
+  } catch (err) {
     console.log(err);
-  })
+  }
 }
 
 const tab = ref("todo");
@@ -382,14 +390,13 @@ const confirmDel = (id) => {
     },
   })
   .onOk(async () => {
-    await store.axios.delete(`/todo/${id}`)
-      .then((res) => {
-        store.successTip(res.data.msg);
-        getTodolists();
-      })
-      .catch((err) => {
-        store.failureTip(err.response.data.msg);
-      });
+    try {
+      const res = await store.axios.delete(`/todo/${id}`);
+      store.successTip(res.data.msg);
+      getTodolists();
+    } catch (err) {
+      store.failureTip(err.response.data.msg);
+    }
   })
   .onCancel(() => {});
 };

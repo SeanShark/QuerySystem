@@ -3,6 +3,10 @@ import axios from "axios";
 import { reactive } from "vue";
 import { useQuasar, date, QSpinnerGears } from "quasar";
 
+/*
+Quasar needs to reboot(quasar dev) after the store.js is changed.
+*/
+
 export const useUserStore = defineStore("datastore", {
   state: () => ({
     authUser: null,
@@ -10,13 +14,18 @@ export const useUserStore = defineStore("datastore", {
     $q: useQuasar(),
     axios: axios,
     date: date,
-    QSpinnerGears: QSpinnerGears,
+    //QSpinnerGears: QSpinnerGears,
     todayDate: date.formatDate(new Date(), "YYYY/MM/DD"),
     isDisabled: false,
     selected: [],
     tableRows: [],
     checkLists: [],
     filteredLists: [],
+    customerLists: [],
+    originalUsers: [],
+    usersArray: [],
+    customersAvailable:[],
+    customerAccessList: [],
     fullscreen: false,
     picUploader: null,
     systemMsg: "",
@@ -38,6 +47,7 @@ export const useUserStore = defineStore("datastore", {
       Printer: false,
       Datacenter: false,
       Surveillance: false,
+      EmptyIP: false,
     },
     searchData: {
       type: "-请选择-",
@@ -52,6 +62,7 @@ export const useUserStore = defineStore("datastore", {
       { label: "电话", value: "Phone" },
       { label: "机房", value: "Datacenter" },
       { label: "监控", value: "Surveillance" },
+      { label: "空IP", value: "EmptyIP"}
     ],
     formState: {
       IP: {
@@ -61,6 +72,7 @@ export const useUserStore = defineStore("datastore", {
         errorMsg: "",
       },
       Phone: {
+        xuhaoError: false,
         numberError: false,
         colorError: false,
         panelError: false,
@@ -128,6 +140,7 @@ export const useUserStore = defineStore("datastore", {
         Phone: {
           _id: "",
           customer: state.searchData.customer,
+          序号: 0,
           号码: "",
           面板号: "",
           楼层线路: "",
@@ -163,6 +176,15 @@ export const useUserStore = defineStore("datastore", {
   actions: {
     async verifyUser() {
       return new Promise((resolve, reject) => {
+        // try {
+        //   const res = axios.post("/user/verifyuser");
+        //   this.authUser = res.data.user;
+        //   resolve();
+        // } catch (error) {
+        //   this.authUser = null;
+        //   reject(error);
+        // }
+        
         axios
           .post("/user/verifyuser")
           .then((res) => {
@@ -173,6 +195,7 @@ export const useUserStore = defineStore("datastore", {
             this.authUser = null;
             reject(err);
           });
+        
       });
     },
     dateAndTime() {
@@ -256,6 +279,39 @@ export const useUserStore = defineStore("datastore", {
           console.log('deleteImg', err);
         }
         this.$q.loading.hide();
+      }
+    },
+    async getCustomers () {
+      try {
+        const res = await axios.post("/customer/customerlists");
+        this.customerLists = res.data;
+        this.customerAccessList = this.customerLists.reduce((acc, curr) => {
+          acc[curr.customer] = curr.accessable.some((id) =>
+            this.usersArray.includes(id)
+          );
+          return acc;
+        }, {});
+        this.customersAvailable = Object.keys(this.customerAccessList).filter(key => this.customerAccessList[key] === true);
+
+      } catch (error) {
+        console.log(err);
+      }
+    },
+    async getAllUserInfo() {
+      try {
+        const res = await axios.post("/user/alluser");
+        this.originalUsers = res.data;
+        this.originalUsers.forEach((element) => {
+          this.usersArray.push(element._id);
+        });
+        // console.log('usersArray', this.usersArray);
+      } catch (err) {
+        // console.log(err);
+        if (err.response.data) {
+          this.failureTip(err.response.data.msg);
+        } else {
+          this.failureTip("获取数据超时");
+        }
       }
     },
     failureTip(msg) {

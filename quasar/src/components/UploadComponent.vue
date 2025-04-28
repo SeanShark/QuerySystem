@@ -147,24 +147,23 @@ const factoryFn = (files) => {
       formData.append(field.name, field.value);
     });
     //Submit the formData by axios
-    await store.axios.post('/upload/imgsarray', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      }
-    })
-    .then((res) => {
-      onUploaded(res)
+    try {
+      const res = await store.axios.post('/upload/imgsarray', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      });
+      onUploaded(res);
       resolve();
-    })
-    .catch(() => {
+    } catch (error) {
       if (store.isCreate) {
         store.tableRows.unshift(
             JSON.parse(JSON.stringify(store.Data[store.searchData.type]))
           );
       }
-      store.failureTip('图片上传失败，请重新尝试')
+      store.failureTip('图片上传失败，请重新尝试');
       reject();
-    })
+    }
   })
 }
 

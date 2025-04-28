@@ -78,6 +78,10 @@ const PrinterSchema = new mongoose.Schema({
 });
 
 const PhoneSchema = new mongoose.Schema({
+  序号: {
+    type: Number,
+    required: true,
+  },
   号码: {
     type: String,
     required: true,
@@ -181,6 +185,7 @@ const Printer = mongoose.models.printer || mongoose.model("Printer", PrinterSche
 const Phone = mongoose.models.phone || mongoose.model("Phone", PhoneSchema);
 const Datacenter = mongoose.models.datacenter || mongoose.model("DataCenter", DatacenterSchema);
 const Surveillance = mongoose.models.surveillance || mongoose.model("Surveillance", SurveillanceSchema);
+// const CustomerList = mongoose.models.customers || mongoose.model("Customer", CustomerSchema);
 
 
 export {
@@ -188,5 +193,6 @@ export {
   Printer,
   Phone,
   Datacenter,
-  Surveillance
+  Surveillance,
+  // CustomerList
 }

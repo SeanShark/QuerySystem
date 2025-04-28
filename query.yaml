@@ -1,0 +1,8 @@
+version: '3.8'
+service: 
+  mongodb_container:
+    image: registry.cn-shenzhen.aliyuncs.com/seanshark/mongodb_initiated
+    ports: 
+      - 27017:27017
+    environment:
+      - 

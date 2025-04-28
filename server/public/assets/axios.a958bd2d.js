@@ -1,0 +1,1 @@
+import{b as o}from"./index.9f0a642c.js";import{a as t}from"./axios.6b484fa5.js";t.defaults.baseURL="http://119.144.159.220:3000/api";t.defaults.timeout=15e3;t.defaults.withCredentials=!0;const e=t.create({baseURL:"http://119.144.159.220:3000"});var r=o(({app:a})=>{a.config.globalProperties.$axios=t,a.config.globalProperties.$api=e});export{e as api,r as default};

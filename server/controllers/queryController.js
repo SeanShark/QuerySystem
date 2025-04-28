@@ -3,14 +3,68 @@ import fs from 'node:fs/promises';
 import path from 'path';
 import os from 'os';
 
+async function findEmptyIPs(customerName, targetNetwork) {
+  const baseParts = targetNetwork.split('.');
+  const baseNetwork = baseParts.slice(0, 3).join('.');
+  let DB = Database["IP"]
+  if (targetNetwork === '192.168.20.0') {
+    DB = Database["Surveillance"]
+  }
+  
+  // Get all assigned IPs for this customer in the target /24 network
+  const assignedIPs = await DB.find({
+    customer: customerName,
+    IP: { $regex: `^${baseNetwork}\\.\\d+$` } // Match exact /24 network
+  })  
+
+  // Extract last octets
+  const assignedLastOctets = assignedIPs.map(ipDoc => {
+      return parseInt(ipDoc.IP.split('.')[3]);
+  });
+  
+  // Convert to Set for faster lookups
+  const assignedSet = new Set(assignedLastOctets);
+  /*
+  // Find all missing IPs (1-254)
+  const missingIPs = [];
+  for (let i = 1; i <= 254; i++) {
+      if (!assignedSet.has(i)) {
+          missingIPs.push(`${baseNetwork}.${i}`);
+      }
+  }
+  // console.log(missingIPs);
+  
+  return missingIPs;
+  */
+  let idCounter = 1;
+  return Array.from({ length: 254 }, (_, i) => i + 1)
+      .filter(octet => !assignedLastOctets.includes(octet))
+      .map(octet => ({
+          _id: 'id' + idCounter++,
+          IP: `${baseNetwork}.${octet}`
+      }));
+}
+
 const getQueryRusults = async (req, res, next) => {
 
   const { customer, field } = req.body.data;
   const type = req.body.type
 
+  if (!type || !customer || !field) {
+    return res.status(401).json({
+      status: "error",
+      msg: '错误的查询参数',
+    });
+  }
+  if (type === 'EmptyIP') {
+    const results = await findEmptyIPs(customer, field);
+    // console.log(results);
+    return res.status(201).send(results);
+  }
+
   let keyword = req.body.data.keyword.toString();
 
-  const forbiddenKeyword = ["1.2", "2.1", "1.1", "0.0"];
+  const forbiddenKeyword = ["1.2", "2.1", "1.1", "0.0", "10", "60"];
 
   let isForbidden = false;
   for (const forbidden of forbiddenKeyword) {
@@ -93,12 +147,12 @@ const newIp = async (req, res) => {
   });
 
   if (existsIP) {
-    res.status(401).json({
+    return res.status(401).json({
       status: "ipError",
       msg: "IP地址已存在",
     });
   } else if (existsMAC) {
-    res.status(401).json({
+    return res.status(401).json({
       status: "macError",
       msg: "MAC地址已存在",
     });
@@ -123,7 +177,7 @@ const newIp = async (req, res) => {
         });
       })
       .catch((e) => {
-        res.status(401).json({
+        return res.status(401).json({
           status: "error",
           msg: e.message,
         });
@@ -325,13 +379,13 @@ const updatePrinter = async (req, res) => {
 
 //Phone
 const newPhone = async (req, res) => {
-  const { customer, 号码, 面板号, 颜色对, 办公室, updatedAt } = req.body.data;
+  const { customer, 序号, 号码, 面板号, 颜色对, 办公室, updatedAt } = req.body.data;
   const 楼层线路 = req.body.data.楼层线路.toUpperCase();
 
   if (
+    !序号 ||
     !customer ||
     !号码 ||
-    !面板号 ||
     !办公室
   ) {
     res.status(401).json({
@@ -352,25 +406,26 @@ const newPhone = async (req, res) => {
   let existsNumber = await Database.Phone.exists({
     $and: [{ customer }, { 号码 }],
   });
-
-  let existsPanel = await Database.Phone.exists({
-    $and: [{ customer }, { 面板号 }],
+  let existsXuhao = await Database.Phone.exists({
+    $and: [{ customer }, { 序号 }],
   });
-
-  let existsColor = await Database.Phone.exists({
-    $and: [{ customer }, { 楼层线路 }, { 颜色对 }],
-  });
+  let existsPanel = false;
+  if (面板号 !== '无' || 面板号 !== null) {
+    existsPanel = await Database.Phone.exists({
+      $and: [{ customer }, { 面板号 }, { 颜色对 }],
+    });
+  }
+  let existsColor = false;
+  if (楼层线路) {
+    existsColor = await Database.Phone.exists({
+      $and: [{ customer }, { 楼层线路 }, { 颜色对 }],
+    });
+  }
 
   if (existsNumber) {
     res.status(401).json({
       status: "numberError",
       msg: "号码已存在",
-    });
-    return;
-  } else if (existsPanel) {
-    res.status(401).json({
-      status: "panelError",
-      msg: "面板号已使用",
     });
     return;
   } else if (existsColor) {
@@ -379,9 +434,22 @@ const newPhone = async (req, res) => {
       msg: "颜色对已使用",
     });
     return;
+  } else if (existsXuhao) {
+    res.status(401).json({
+      status: "xuhaoError",
+      msg: "序号已存在",
+    });
+    return;
+  } else if (existsPanel) {
+    res.status(401).json({
+      status: "panelError",
+      msg: "面板已使用",
+    });
+    return;
   } else {
     const newRecord = new Database.Phone({
       customer,
+      序号,
       号码,
       面板号,
       楼层线路,
@@ -414,15 +482,17 @@ const updatePhone = async (req, res) => {
   const number = req.body.data.号码;
   const color = req.body.data.颜色对;
   const id = req.body.data._id;
-  const panel = req.body.data.面板号;
   const office = req.body.data.办公室;
+  const panel = req.body.data.面板号;
   const updatedAt = req.body.data.updatedAt;
+  const xuhao = req.body.data.序号;
 
 
   if (
+    !id ||
+    !xuhao ||
     !customer ||
     !number ||
-    !panel ||
     !office
   ) {
     res.status(401).json({
@@ -444,7 +514,10 @@ const updatePhone = async (req, res) => {
     $and: [{ customer: customer }, { 号码: number }, { _id: { $ne: id } }],
   });
   let existsPanel = await Database.Phone.exists({
-    $and: [{ customer: customer }, { 面板号: req.body.面板号 }, { _id: { $ne: id } }],
+    $and: [{ customer: customer }, { 面板号: panel }, { 颜色对: color }, { _id: { $ne: id } }],
+  });
+  let existsXuhao = await Database.Phone.exists({
+    $and: [{ customer: customer}, { 序号: xuhao }, { _id: { $ne: id } }],
   });
 
   if (req.body.楼层线路) {
@@ -463,7 +536,7 @@ const updatePhone = async (req, res) => {
       });
       return;
     }
-  }
+  } 
 
   if (existsPhone) {
     res.status(401).json({
@@ -477,16 +550,24 @@ const updatePhone = async (req, res) => {
       msg: "面板号已使用",
     });
     return;
-  } else {
+  } else if ( existsXuhao ) {
+    res.status(401).json({
+      status: "xuhaoError",
+      msg: "序号已存在",
+    });
+    return;
+  }
+  else {
     const updatePhone = {
-      号码: req.body.data.号码,
-      面板号: req.body.data.面板号,
-      楼层线路: req.body.data.楼层线路,
-      颜色对: req.body.data.颜色对,
-      办公室: req.body.data.办公室,
+      序号: xuhao,
+      号码: number,
+      面板号: panel,
+      楼层线路: cable,
+      颜色对: color,
+      办公室: office,
       updatedAt,
     };
-    Database.Phone.findOneAndUpdate({ _id: req.body.data._id }, updatePhone)
+    Database.Phone.findOneAndUpdate({ _id: id }, updatePhone)
       .then((e) => {
         if (e) {
           res.status(201).json({
@@ -735,6 +816,7 @@ const deleteRecord = async (req, res) => {
   }
 }
 
+
 export {
   newIp,
   newPhone,
@@ -747,5 +829,6 @@ export {
   updateDatacenter,
   updateSurveillance,
   getQueryRusults,
-  deleteRecord
+  deleteRecord,
+  findEmptyIPs
 }

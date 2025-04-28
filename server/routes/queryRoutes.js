@@ -2,24 +2,27 @@ import express from 'express';
 const router = express.Router();
 import * as queryControllers from '../controllers/queryController.js';
 import { protect } from '../middleware/cookieAuthMiddleware.js';
-import { customerControl, addAuth, updateAuth, deleteAuth, allowDatabase} from '../middleware/authMiddleware.js';
+import { addAuth, updateAuth, deleteAuth, allowDatabase, accessableCustomer } from '../middleware/authMiddleware.js';
+//allowDatabase which allows the collection's type, such as: IP, Phone....
 
-router.post('/', protect, allowDatabase, customerControl, queryControllers.getQueryRusults);
 
-router.post('/newip', protect, allowDatabase, customerControl, addAuth,queryControllers.newIp);
-router.put('/updateip', protect, allowDatabase, customerControl, updateAuth, queryControllers.updateIp);
+router.post('/', protect, allowDatabase, accessableCustomer, queryControllers.getQueryRusults);
+// router.post('/emptyip', protect, allowDatabase, accessableCustomer, queryControllers.findEmptyIPs);
 
-router.post("/newphone", protect, allowDatabase, customerControl, addAuth, queryControllers.newPhone);
-router.put("/updatephone", protect, allowDatabase, customerControl, updateAuth, queryControllers.updatePhone);
+router.post('/newip', protect, allowDatabase, accessableCustomer, addAuth,queryControllers.newIp);
+router.put('/updateip', protect, allowDatabase, accessableCustomer, updateAuth, queryControllers.updateIp);
 
-router.post("/newprinter", protect, allowDatabase, customerControl, addAuth, queryControllers.newPrinter);
-router.put("/updateprinter", protect, allowDatabase, customerControl, updateAuth, queryControllers.updatePrinter);
+router.post("/newphone", protect, allowDatabase, accessableCustomer, addAuth, queryControllers.newPhone);
+router.put("/updatephone", protect, allowDatabase, accessableCustomer, updateAuth, queryControllers.updatePhone);
 
-router.post("/newdatacenter", protect, allowDatabase, customerControl, addAuth, queryControllers.newDatacenter);
-router.put("/updatedatacenter", protect, allowDatabase, customerControl, updateAuth, queryControllers.updateDatacenter);
+router.post("/newprinter", protect, allowDatabase, accessableCustomer, addAuth, queryControllers.newPrinter);
+router.put("/updateprinter", protect, allowDatabase, accessableCustomer, updateAuth, queryControllers.updatePrinter);
 
-router.post("/newsurveillance", protect, allowDatabase, customerControl, addAuth, queryControllers.newSurveillance);
-router.put("/updatesurveillance", protect, allowDatabase, customerControl, updateAuth, queryControllers.updateSurveillance);
+router.post("/newdatacenter", protect, allowDatabase, accessableCustomer, addAuth, queryControllers.newDatacenter);
+router.put("/updatedatacenter", protect, allowDatabase, accessableCustomer, updateAuth, queryControllers.updateDatacenter);
+
+router.post("/newsurveillance", protect, allowDatabase, accessableCustomer, addAuth, queryControllers.newSurveillance);
+router.put("/updatesurveillance", protect, allowDatabase, accessableCustomer, updateAuth, queryControllers.updateSurveillance);
 
 //If the user do not have the permisions of the customer or type of database,
 //He cannot query the results to delete. He can only delete what he permit to get.
